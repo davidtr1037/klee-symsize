@@ -48,8 +48,10 @@ public:
   unsigned id;
   uint64_t address;
 
-  /// size in bytes
-  unsigned size;
+  /* TODO: add docs */
+  ref<Expr> size;
+  /* TODO: add docs */
+  unsigned capacity;
   mutable std::string name;
 
   bool isLocal;
@@ -81,26 +83,28 @@ public:
   MemoryObject(uint64_t _address) 
     : id(counter++),
       address(_address),
-      size(0),
+      size(nullptr),
+      capacity(0),
       isFixed(true),
       parent(NULL),
       allocSite(0) {
   }
 
-  MemoryObject(uint64_t _address, unsigned _size, 
-               bool _isLocal, bool _isGlobal, bool _isFixed,
-               const llvm::Value *_allocSite,
-               MemoryManager *_parent)
+  MemoryObject(uint64_t address, ref<Expr> size, unsigned capacity,
+               bool isLocal, bool isGlobal, bool isFixed,
+               const llvm::Value *allocSite,
+               MemoryManager *parent)
     : id(counter++),
-      address(_address),
-      size(_size),
+      address(address),
+      size(size),
+      capacity(capacity),
       name("unnamed"),
-      isLocal(_isLocal),
-      isGlobal(_isGlobal),
-      isFixed(_isFixed),
+      isLocal(isLocal),
+      isGlobal(isGlobal),
+      isFixed(isFixed),
       isUserSpecified(false),
-      parent(_parent), 
-      allocSite(_allocSite) {
+      parent(parent),
+      allocSite(allocSite) {
   }
 
   ~MemoryObject();
@@ -115,8 +119,20 @@ public:
   ref<ConstantExpr> getBaseExpr() const { 
     return ConstantExpr::create(address, Context::get().getPointerWidth());
   }
-  ref<ConstantExpr> getSizeExpr() const { 
-    return ConstantExpr::create(size, Context::get().getPointerWidth());
+  ref<Expr> getSizeExpr() const {
+    return size;
+    //return ConstantExpr::create(size, Context::get().getPointerWidth());
+  }
+  inline bool hasFixedSize() const {
+    return isa<ConstantExpr>(size);
+  }
+  inline unsigned getFixedSize() const {
+    ConstantExpr *c = dyn_cast<ConstantExpr>(size);
+    if (c) {
+      return c->getZExtValue();
+    } else {
+      assert(0);
+    }
   }
   ref<Expr> getOffsetExpr(ref<Expr> pointer) const {
     return SubExpr::create(pointer, getBaseExpr());
@@ -129,21 +145,39 @@ public:
   }
 
   ref<Expr> getBoundsCheckOffset(ref<Expr> offset) const {
-    if (size==0) {
-      return EqExpr::create(offset, 
+    if (hasFixedSize() && getFixedSize() == 0) {
+      return EqExpr::create(offset,
                             ConstantExpr::alloc(0, Context::get().getPointerWidth()));
     } else {
       return UltExpr::create(offset, getSizeExpr());
     }
   }
   ref<Expr> getBoundsCheckOffset(ref<Expr> offset, unsigned bytes) const {
-    if (bytes<=size) {
-      return UltExpr::create(offset, 
-                             ConstantExpr::alloc(size - bytes + 1, 
-                                                 Context::get().getPointerWidth()));
-    } else {
-      return ConstantExpr::alloc(0, Expr::Bool);
+    if (hasFixedSize()) {
+      unsigned fixedSize = getFixedSize();
+      if (bytes <= fixedSize) {
+        return UltExpr::create(offset,
+                               ConstantExpr::alloc(fixedSize - bytes + 1,
+                                                   Context::get().getPointerWidth()));
+      } else {
+        return ConstantExpr::alloc(0, Expr::Bool);
+      }
     }
+    ref<Expr> bytesCheck = UleExpr::create(
+      ConstantExpr::create(
+        bytes,
+        Context::get().getPointerWidth()
+      ),
+      size
+    );
+    ref<Expr> offsetCheck = UleExpr::create(
+      offset,
+      SubExpr::create(
+        size,
+        ConstantExpr::create(bytes, Context::get().getPointerWidth())
+      )
+    );
+    return AndExpr::create(bytesCheck, offsetCheck);
   }
 
   /// Compare this object with memory object b.
@@ -156,8 +190,11 @@ public:
     if (address != b.address)
       return (address < b.address ? -1 : 1);
 
-    if (size != b.size)
-      return (size < b.size ? -1 : 1);
+    assert(hasFixedSize() && b.hasFixedSize());
+    if (getFixedSize() != b.getFixedSize())
+      return (getFixedSize() < b.getFixedSize() ? -1 : 1);
+    //if (size != b.size)
+    //  return (size < b.size ? -1 : 1);
 
     if (allocSite != b.allocSite)
       return (allocSite < b.allocSite ? -1 : 1);

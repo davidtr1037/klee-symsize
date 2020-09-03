@@ -151,7 +151,12 @@ MemoryObject *MemoryManager::allocate(uint64_t size, bool isLocal,
     return 0;
 
   ++stats::allocations;
-  MemoryObject *res = new MemoryObject(address, size, isLocal, isGlobal, false,
+  /* TODO: change capacity */
+  ref<ConstantExpr> sizeExpr = ConstantExpr::create(
+    size,
+    Context::get().getPointerWidth()
+  );
+  MemoryObject *res = new MemoryObject(address, sizeExpr, size, isLocal, isGlobal, false,
                                        allocSite, this);
   objects.insert(res);
   return res;
@@ -163,14 +168,20 @@ MemoryObject *MemoryManager::allocateFixed(uint64_t address, uint64_t size,
   for (objects_ty::iterator it = objects.begin(), ie = objects.end(); it != ie;
        ++it) {
     MemoryObject *mo = *it;
-    if (address + size > mo->address && address < mo->address + mo->size)
+    assert(mo->hasFixedSize());
+    if (address + size > mo->address && address < mo->address + mo->getFixedSize())
       klee_error("Trying to allocate an overlapping object");
   }
 #endif
 
   ++stats::allocations;
+  /* TODO: change capacity */
+  ref<ConstantExpr> sizeExpr = ConstantExpr::create(
+    size,
+    Context::get().getPointerWidth()
+  );
   MemoryObject *res =
-      new MemoryObject(address, size, false, true, true, allocSite, this);
+      new MemoryObject(address, sizeExpr, size, false, true, true, allocSite, this);
   objects.insert(res);
   return res;
 }

@@ -299,7 +299,8 @@ bool ExecutionState::merge(const ExecutionState &b) {
     assert(otherOS);
 
     ObjectState *wos = addressSpace.getWriteable(mo, os);
-    for (unsigned i=0; i<mo->size; i++) {
+    assert(mo->hasFixedSize());
+    for (unsigned i=0; i<mo->getFixedSize(); i++) {
       ref<Expr> av = wos->read8(i);
       ref<Expr> bv = otherOS->read8(i);
       wos->write(i, SelectExpr::create(inA, av, bv));

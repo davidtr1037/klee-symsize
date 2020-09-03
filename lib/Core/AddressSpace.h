@@ -68,9 +68,16 @@ namespace klee {
     AddressSpace(const AddressSpace &b) : cowKey(++b.cowKey), objects(b.objects) { }
     ~AddressSpace() {}
 
+    bool checkResolvedObject(ExecutionState &state,
+                             TimingSolver *solver,
+                             uint64_t address,
+                             const MemoryObject *mo) const;
+
     /// Resolve address to an ObjectPair in result.
     /// \return true iff an object was found.
-    bool resolveOne(const ref<ConstantExpr> &address, 
+    bool resolveOne(ExecutionState &state,
+                    TimingSolver *solver,
+                    const ref<ConstantExpr> &address,
                     ObjectPair &result) const;
 
     /// Resolve address to an ObjectPair in result.

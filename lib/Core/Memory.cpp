@@ -52,7 +52,7 @@ MemoryObject::~MemoryObject() {
 void MemoryObject::getAllocInfo(std::string &result) const {
   llvm::raw_string_ostream info(result);
 
-  info << "MO" << id << "[" << size << "]";
+  info << "MO" << id << "[" << *size << "]";
 
   if (allocSite) {
     info << " allocated at ";
@@ -73,15 +73,17 @@ void MemoryObject::getAllocInfo(std::string &result) const {
 
 /***/
 
+/* TODO: use size and capacity */
 ObjectState::ObjectState(const MemoryObject *mo)
   : copyOnWriteOwner(0),
     object(mo),
-    concreteStore(new uint8_t[mo->size]),
+    /* TODO: change later */
+    concreteStore(new uint8_t[mo->capacity]),
     concreteMask(0),
     flushMask(0),
     knownSymbolics(0),
     updates(0, 0),
-    size(mo->size),
+    size(mo->capacity),
     readOnly(false) {
   if (!UseConstantArrays) {
     static unsigned id = 0;
@@ -89,19 +91,19 @@ ObjectState::ObjectState(const MemoryObject *mo)
         getArrayCache()->CreateArray("tmp_arr" + llvm::utostr(++id), size);
     updates = UpdateList(array, 0);
   }
-  memset(concreteStore, 0, size);
+  memset(concreteStore, 0, mo->capacity);
 }
 
 
 ObjectState::ObjectState(const MemoryObject *mo, const Array *array)
   : copyOnWriteOwner(0),
     object(mo),
-    concreteStore(new uint8_t[mo->size]),
+    concreteStore(new uint8_t[mo->capacity]),
     concreteMask(0),
     flushMask(0),
     knownSymbolics(0),
     updates(array, 0),
-    size(mo->size),
+    size(mo->capacity),
     readOnly(false) {
   makeSymbolic();
   memset(concreteStore, 0, size);

@@ -805,7 +805,9 @@ void Executor::initializeGlobalObjects(ExecutionState &state) {
     MemoryObject *mo = globalObjects.find(&v)->second;
     ObjectState *os = bindObjectInState(state, mo, false);
 
-    if (v.isDeclaration() && mo->size) {
+    /* globals have a fixed size */
+    assert(mo->hasFixedSize());
+    if (v.isDeclaration() && mo->getFixedSize()) {
       // Program already running -> object already initialized.
       // Read concrete value and write it to our copy.
       void *addr;
@@ -818,7 +820,7 @@ void Executor::initializeGlobalObjects(ExecutionState &state) {
         klee_error("Unable to load symbol(%.*s) while initializing globals",
                    static_cast<int>(v.getName().size()), v.getName().data());
       }
-      for (unsigned offset = 0; offset < mo->size; offset++) {
+      for (unsigned offset = 0; offset < mo->getFixedSize(); offset++) {
         os->write8(offset, static_cast<unsigned char *>(addr)[offset]);
       }
     } else if (v.hasInitializer()) {
@@ -1661,7 +1663,7 @@ void Executor::executeCall(ExecutionState &state, KInstruction *ki, Function *f,
             assert(CE); // byval argument needs to be a concrete pointer
 
             ObjectPair op;
-            state.addressSpace.resolveOne(CE, op);
+            state.addressSpace.resolveOne(state, solver, CE, op);
             const ObjectState *osarg = op.second;
             assert(osarg);
             for (unsigned i = 0; i < osarg->size; i++)
@@ -3130,7 +3132,7 @@ std::string Executor::getAddressInfo(ExecutionState &state,
     std::string alloc_info;
     mo->getAllocInfo(alloc_info);
     info << "object at " << mo->address
-         << " of size " << mo->size << "\n"
+         << " of size " << *mo->size << "\n"
          << "\t\t" << alloc_info << "\n";
   }
   if (lower!=state.addressSpace.objects.begin()) {
@@ -3143,7 +3145,7 @@ std::string Executor::getAddressInfo(ExecutionState &state,
       std::string alloc_info;
       mo->getAllocInfo(alloc_info);
       info << "object at " << mo->address 
-           << " of size " << mo->size << "\n"
+           << " of size " << *mo->size << "\n"
            << "\t\t" << alloc_info << "\n";
     }
   }
@@ -3345,7 +3347,7 @@ void Executor::callExternalFunction(ExecutionState &state,
       ObjectPair op;
       // Checking to see if the argument is a pointer to something
       if (ce->getWidth() == Context::get().getPointerWidth() &&
-          state.addressSpace.resolveOne(ce, op)) {
+          state.addressSpace.resolveOne(state, solver, ce, op)) {
         op.second->flushToConcreteStore(solver, state);
       }
       wordIndex += (ce->getWidth()+63)/64;
@@ -3371,7 +3373,7 @@ void Executor::callExternalFunction(ExecutionState &state,
   int *errno_addr = getErrnoLocation(state);
   ObjectPair result;
   bool resolved = state.addressSpace.resolveOne(
-      ConstantExpr::create((uint64_t)errno_addr, Expr::Int64), result);
+      state, solver, ConstantExpr::create((uint64_t)errno_addr, Expr::Int64), result);
   if (!resolved)
     klee_error("Could not resolve memory object for errno");
   ref<Expr> errValueExpr = result.second->read(0, sizeof(*errno_addr) * 8);
@@ -3684,14 +3686,14 @@ void Executor::executeMemoryOperation(ExecutionState &state,
   solver->setTimeout(coreSolverTimeout);
   if (!state.addressSpace.resolveOne(state, solver, address, op, success)) {
     address = toConstant(state, address, "resolveOne failure");
-    success = state.addressSpace.resolveOne(cast<ConstantExpr>(address), op);
+    success = state.addressSpace.resolveOne(state, solver, cast<ConstantExpr>(address), op);
   }
   solver->setTimeout(time::Span());
 
   if (success) {
     const MemoryObject *mo = op.first;
 
-    if (MaxSymArraySize && mo->size >= MaxSymArraySize) {
+    if (MaxSymArraySize && mo->capacity >= MaxSymArraySize) {
       address = toConstant(state, address, "max-sym-array-size");
     }
     
@@ -3798,7 +3800,7 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
     while (!state.arrayNames.insert(uniqueName).second) {
       uniqueName = name + "_" + llvm::utostr(++id);
     }
-    const Array *array = arrayCache.CreateArray(uniqueName, mo->size);
+    const Array *array = arrayCache.CreateArray(uniqueName, mo->capacity);
     bindObjectInState(state, mo, false, array);
     state.addSymbolic(mo, array);
     
@@ -3806,6 +3808,7 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
       seedMap.find(&state);
     if (it!=seedMap.end()) { // In seed mode we need to add this as a
                              // binding.
+      assert(mo->hasFixedSize());
       for (std::vector<SeedInfo>::iterator siit = it->second.begin(), 
              siie = it->second.end(); siit != siie; ++siit) {
         SeedInfo &si = *siit;
@@ -3814,20 +3817,20 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
         if (!obj) {
           if (ZeroSeedExtension) {
             std::vector<unsigned char> &values = si.assignment.bindings[array];
-            values = std::vector<unsigned char>(mo->size, '\0');
+            values = std::vector<unsigned char>(mo->getFixedSize(), '\0');
           } else if (!AllowSeedExtension) {
             terminateStateOnError(state, "ran out of inputs during seeding",
                                   User);
             break;
           }
         } else {
-          if (obj->numBytes != mo->size &&
+          if (obj->numBytes != mo->getFixedSize() &&
               ((!(AllowSeedExtension || ZeroSeedExtension)
-                && obj->numBytes < mo->size) ||
-               (!AllowSeedTruncation && obj->numBytes > mo->size))) {
+                && obj->numBytes < mo->getFixedSize()) ||
+               (!AllowSeedTruncation && obj->numBytes > mo->getFixedSize()))) {
 	    std::stringstream msg;
 	    msg << "replace size mismatch: "
-		<< mo->name << "[" << mo->size << "]"
+		<< mo->name << "[" << mo->getFixedSize() << "]"
 		<< " vs " << obj->name << "[" << obj->numBytes << "]"
 		<< " in test\n";
 
@@ -3836,9 +3839,9 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
           } else {
             std::vector<unsigned char> &values = si.assignment.bindings[array];
             values.insert(values.begin(), obj->bytes, 
-                          obj->bytes + std::min(obj->numBytes, mo->size));
+                          obj->bytes + std::min(obj->numBytes, mo->getFixedSize()));
             if (ZeroSeedExtension) {
-              for (unsigned i=obj->numBytes; i<mo->size; ++i)
+              for (unsigned i=obj->numBytes; i<mo->getFixedSize(); ++i)
                 values.push_back('\0');
             }
           }
@@ -3846,15 +3849,16 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
       }
     }
   } else {
+    assert(mo->hasFixedSize());
     ObjectState *os = bindObjectInState(state, mo, false);
     if (replayPosition >= replayKTest->numObjects) {
       terminateStateOnError(state, "replay count mismatch", User);
     } else {
       KTestObject *obj = &replayKTest->objects[replayPosition++];
-      if (obj->numBytes != mo->size) {
+      if (obj->numBytes != mo->getFixedSize()) {
         terminateStateOnError(state, "replay size mismatch", User);
       } else {
-        for (unsigned i=0; i<mo->size; i++)
+        for (unsigned i=0; i<mo->getFixedSize(); i++)
           os->write8(i, obj->bytes[i]);
       }
     }

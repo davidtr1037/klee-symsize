@@ -243,7 +243,7 @@ SpecialFunctionHandler::readStringAtAddress(ExecutionState &state,
     return "";
   }
   ref<ConstantExpr> address = cast<ConstantExpr>(addressExpr);
-  if (!state.addressSpace.resolveOne(address, op)) {
+  if (!state.addressSpace.resolveOne(state, executor.solver, address, op)) {
     executor.terminateStateOnError(
         state, "Invalid string pointer passed to one of the klee_ functions",
         Executor::TerminateReason::User);
@@ -258,7 +258,8 @@ SpecialFunctionHandler::readStringAtAddress(ExecutionState &state,
 
   std::ostringstream buf;
   char c = 0;
-  for (size_t i = offset; i < mo->size; ++i) {
+  assert(mo->hasFixedSize());
+  for (size_t i = offset; i < mo->getFixedSize(); ++i) {
     ref<Expr> cur = os->read8(i);
     cur = executor.toUnique(state, cur);
     assert(isa<ConstantExpr>(cur) && 
@@ -610,9 +611,10 @@ void SpecialFunctionHandler::handleGetObjSize(ExecutionState &state,
   executor.resolveExact(state, arguments[0], rl, "klee_get_obj_size");
   for (Executor::ExactResolutionList::iterator it = rl.begin(), 
          ie = rl.end(); it != ie; ++it) {
+    assert(it->first.first->hasFixedSize());
     executor.bindLocal(
         target, *it->second,
-        ConstantExpr::create(it->first.first->size,
+        ConstantExpr::create(it->first.first->getFixedSize(),
                              executor.kmodule->targetData->getTypeSizeInBits(
                                  target->inst->getType())));
   }
@@ -633,7 +635,7 @@ void SpecialFunctionHandler::handleGetErrno(ExecutionState &state,
   // Retrieve the memory object of the errno variable
   ObjectPair result;
   bool resolved = state.addressSpace.resolveOne(
-      ConstantExpr::create((uint64_t)errno_addr, Expr::Int64), result);
+      state, executor.solver, ConstantExpr::create((uint64_t)errno_addr, Expr::Int64), result);
   if (!resolved)
     executor.terminateStateOnError(state, "Could not resolve address for errno",
                                    Executor::User);
@@ -733,7 +735,7 @@ void SpecialFunctionHandler::handleCheckMemoryAccess(ExecutionState &state,
   } else {
     ObjectPair op;
 
-    if (!state.addressSpace.resolveOne(cast<ConstantExpr>(address), op)) {
+    if (!state.addressSpace.resolveOne(state, executor.solver, cast<ConstantExpr>(address), op)) {
       executor.terminateStateOnError(state,
                                      "check_memory_access: memory error",
 				     Executor::Ptr, NULL,
