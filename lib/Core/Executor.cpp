@@ -412,6 +412,8 @@ cl::opt<bool> DebugCheckForImpliedValues(
     cl::desc("Debug the implied value optimization"),
     cl::cat(DebugCat));
 
+cl::opt<bool> AllocateSymSize("allocate-sym-size", cl::init(false), cl::desc(""));
+
 } // namespace
 
 // XXX hack
@@ -1664,6 +1666,8 @@ void Executor::executeCall(ExecutionState &state, KInstruction *ki, Function *f,
 
             ObjectPair op;
             state.addressSpace.resolveOne(state, solver, CE, op);
+            const MemoryObject *mo = op.first;
+            assert(mo->hasFixedSize());
             const ObjectState *osarg = op.second;
             assert(osarg);
             for (unsigned i = 0; i < osarg->size; i++)
@@ -3489,13 +3493,23 @@ void Executor::executeAlloc(ExecutionState &state,
                             const ObjectState *reallocFrom,
                             size_t allocationAlignment) {
   size = toUnique(state, size);
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(size)) {
+  if (isa<ConstantExpr>(size) || AllocateSymSize) {
     const llvm::Value *allocSite = state.prevPC->inst;
     if (allocationAlignment == 0) {
       allocationAlignment = getAllocationAlignment(allocSite);
     }
+
+    uint64_t capacity;
+    if (isa<ConstantExpr>(size)) {
+      ref<ConstantExpr> c = dyn_cast<ConstantExpr>(size);
+      capacity = c->getZExtValue();
+    } else {
+      capacity = 100;
+      klee_message("allocating symbolic size (capacity = %lu)", capacity);
+    }
+
     MemoryObject *mo =
-        memory->allocate(CE->getZExtValue(), isLocal, /*isGlobal=*/false,
+        memory->allocate(size, capacity, isLocal, /*isGlobal=*/false,
                          allocSite, allocationAlignment);
     if (!mo) {
       bindLocal(target, state, 
@@ -3510,6 +3524,8 @@ void Executor::executeAlloc(ExecutionState &state,
       bindLocal(target, state, mo->getBaseExpr());
       
       if (reallocFrom) {
+        assert(reallocFrom->getObject()->hasFixedSize());
+        assert(mo->hasFixedSize());
         unsigned count = std::min(reallocFrom->size, os->size);
         for (unsigned i=0; i<count; i++)
           os->write(i, reallocFrom->read8(i));
