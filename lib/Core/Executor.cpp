@@ -3526,8 +3526,10 @@ void Executor::executeAlloc(ExecutionState &state,
       bindLocal(target, state, mo->getBaseExpr());
       
       if (reallocFrom) {
-        assert(reallocFrom->getObject()->hasFixedSize());
-        assert(mo->hasFixedSize());
+        /* TODO: validate this solution */
+        if (!mo->hasFixedSize()) {
+          klee_message("realloc with symbolic size");
+        }
         unsigned count = std::min(reallocFrom->size, os->size);
         for (unsigned i=0; i<count; i++)
           os->write(i, reallocFrom->read8(i));
