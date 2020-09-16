@@ -454,7 +454,7 @@ private:
   /// Only for debug purposes; enable via debugger or klee-control
   void dumpStates();
   void dumpPTree();
-  bool getCapacity(ExecutionState &state, ref<Expr> size);
+  size_t getCapacity(ExecutionState &state, ref<Expr> size);
 
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,
