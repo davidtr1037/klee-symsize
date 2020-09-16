@@ -414,6 +414,8 @@ cl::opt<bool> DebugCheckForImpliedValues(
 
 cl::opt<bool> AllocateSymSize("allocate-sym-size", cl::init(false), cl::desc(""));
 
+cl::opt<unsigned> Capacity("capacity", cl::desc(""), cl::init(100u));
+
 } // namespace
 
 // XXX hack
@@ -3504,7 +3506,7 @@ void Executor::executeAlloc(ExecutionState &state,
       ref<ConstantExpr> c = dyn_cast<ConstantExpr>(size);
       capacity = c->getZExtValue();
     } else {
-      capacity = 100;
+      capacity = getCapacity(state, size);
       klee_message("allocating symbolic size (capacity = %lu)", capacity);
     }
 
@@ -4277,6 +4279,30 @@ void Executor::dumpStates() {
   }
 
   ::dumpStates = 0;
+}
+
+bool Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
+  Solver::Validity result;
+  solver->setTimeout(coreSolverTimeout);
+  size_t capacity = Capacity;
+  ref<Expr> bound = UltExpr::create(
+    size,
+    ConstantExpr::create(capacity, Context::get().getPointerWidth())
+  );
+  bool success = solver->evaluate(state.constraints, bound, result, state.queryMetaData);
+  solver->setTimeout(time::Span());
+  if (!success) {
+    assert(0);
+  }
+
+  if (result == Solver::False) {
+    assert(0);
+  }
+  if (result == Solver::Unknown) {
+    state.addConstraint(bound);
+  }
+
+  return capacity;
 }
 
 ///
