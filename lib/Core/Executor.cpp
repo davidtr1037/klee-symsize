@@ -3507,6 +3507,7 @@ void Executor::executeAlloc(ExecutionState &state,
       capacity = c->getZExtValue();
     } else {
       capacity = getCapacity(state, size);
+      size->isTainted = true;
       klee_message("allocating symbolic size (capacity = %lu)", capacity);
     }
 
