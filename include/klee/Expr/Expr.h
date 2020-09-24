@@ -734,6 +734,7 @@ public:
 private:
   ConcatExpr(const ref<Expr> &l, const ref<Expr> &r) : left(l), right(r) {
     width = l->getWidth() + r->getWidth();
+    isTainted = l->isTainted || r->isTainted;
   }
 
 public:
