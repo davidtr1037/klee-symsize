@@ -865,7 +865,9 @@ public:
   Width width;
 
 public:
-  CastExpr(const ref<Expr> &e, Width w) : src(e), width(w) {}
+  CastExpr(const ref<Expr> &e, Width w) : src(e), width(w) {
+    isTainted = e->isTainted;
+  }
 
   Width getWidth() const { return width; }
 
