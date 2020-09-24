@@ -4286,26 +4286,27 @@ void Executor::dumpStates() {
 
 size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   size_t capacity = Capacity;
-  Solver::Validity result;
-  solver->setTimeout(coreSolverTimeout);
-  ref<Expr> bound = UltExpr::create(
-    size,
-    ConstantExpr::create(capacity, Context::get().getPointerWidth())
-  );
-  bool success = solver->evaluate(state.constraints, bound, result, state.queryMetaData);
-  solver->setTimeout(time::Span());
-  if (!success) {
-    /* TODO: handle... */
-    assert(0);
-  }
+  Solver::Validity result = Solver::False;
 
-  if (result == Solver::False) {
-    /* TODO: choose higher capacity... */
-    assert(0);
-  }
-  if (result == Solver::Unknown) {
-    state.addConstraint(bound);
-  }
+  do {
+    solver->setTimeout(coreSolverTimeout);
+    ref<Expr> bound = UltExpr::create(
+      size,
+      ConstantExpr::create(capacity, Context::get().getPointerWidth())
+    );
+    bool success = solver->evaluate(state.constraints, bound, result, state.queryMetaData);
+    solver->setTimeout(time::Span());
+    if (!success) {
+      /* TODO: handle... */
+      assert(0);
+    }
+
+    if (result == Solver::Unknown) {
+      state.addConstraint(bound);
+    }
+
+    capacity += 20;
+  } while (result == Solver::False);
 
   return capacity;
 }
