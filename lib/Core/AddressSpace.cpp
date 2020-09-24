@@ -327,9 +327,12 @@ void AddressSpace::copyOutConcretes() {
       const auto &os = it->second;
       auto address = reinterpret_cast<std::uint8_t*>(mo->address);
 
-      assert(mo->hasFixedSize());
-      if (!os->readOnly)
-        memcpy(address, os->concreteStore, mo->getFixedSize());
+      /* TODO: validate */
+      //assert(mo->hasFixedSize());
+      if (!os->readOnly) {
+        //memcpy(address, os->concreteStore, mo->getFixedSize());
+        memcpy(address, os->concreteStore, mo->capacity);
+      }
     }
   }
 }
@@ -351,14 +354,17 @@ bool AddressSpace::copyInConcretes() {
 
 bool AddressSpace::copyInConcrete(const MemoryObject *mo, const ObjectState *os,
                                   uint64_t src_address) {
-  assert(mo->hasFixedSize());
+  /* TODO: validate */
+  //assert(mo->hasFixedSize());
   auto address = reinterpret_cast<std::uint8_t*>(src_address);
-  if (memcmp(address, os->concreteStore, mo->getFixedSize()) != 0) {
+  //if (memcmp(address, os->concreteStore, mo->getFixedSize()) != 0) {
+  if (memcmp(address, os->concreteStore, mo->capacity) != 0) {
     if (os->readOnly) {
       return false;
     } else {
       ObjectState *wos = getWriteable(mo, os);
-      memcpy(wos->concreteStore, address, mo->getFixedSize());
+      //memcpy(wos->concreteStore, address, mo->getFixedSize());
+      memcpy(wos->concreteStore, address, mo->capacity);
     }
   }
   return true;
