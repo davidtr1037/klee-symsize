@@ -413,8 +413,8 @@ cl::opt<bool> DebugCheckForImpliedValues(
     cl::cat(DebugCat));
 
 cl::opt<bool> AllocateSymSize("allocate-sym-size", cl::init(false), cl::desc(""));
-
 cl::opt<unsigned> Capacity("capacity", cl::desc(""), cl::init(100u));
+cl::opt<bool> DebugTaint("debug-taint", cl::init(false), cl::desc(""));
 
 } // namespace
 
@@ -1091,6 +1091,12 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     return StatePair(0, &current);
   } else {
+    if (DebugTaint && condition->isTainted) {
+      Instruction *lastInst;
+      const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
+      errs() << "TAINT " << info.file << ":" << info.line << "\n";
+    }
+
     TimerStatIncrementer timer(stats::forkTime);
     ExecutionState *falseState, *trueState = &current;
 
