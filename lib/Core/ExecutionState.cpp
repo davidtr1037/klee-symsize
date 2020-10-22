@@ -314,6 +314,9 @@ bool ExecutionState::merge(const ExecutionState &b) {
     m.addConstraint(constraint);
   m.addConstraint(OrExpr::create(inA, inB));
 
+  if (DebugLogStateMerge) {
+    llvm::errs() << "merge succeeded\n";
+  }
   return true;
 }
 
