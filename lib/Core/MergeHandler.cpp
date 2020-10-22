@@ -42,6 +42,9 @@ llvm::cl::opt<bool> DebugLogIncompleteMerge(
     llvm::cl::desc("Debug information for incomplete path merging (default=false)"),
     llvm::cl::cat(klee::MergeCat));
 
+llvm::cl::opt<bool> UseObjectMerge("use-object-merge", llvm::cl::init(false));
+
+
 double MergeHandler::getMean() {
   if (closedStateCount == 0)
     return 0;
