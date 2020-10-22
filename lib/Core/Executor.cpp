@@ -4294,7 +4294,7 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   size_t capacity = Capacity;
   Solver::Validity result = Solver::False;
 
-  do {
+  while (result == Solver::False) {
     solver->setTimeout(coreSolverTimeout);
     ref<Expr> bound = UltExpr::create(
       size,
@@ -4307,12 +4307,17 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
       assert(0);
     }
 
+    if (result == Solver::True) {
+      break;
+    }
+
     if (result == Solver::Unknown) {
       state.addConstraint(bound);
+      break;
     }
 
     capacity += 20;
-  } while (result == Solver::False);
+  }
 
   return capacity;
 }
