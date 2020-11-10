@@ -65,16 +65,25 @@ bool AddressSpace::checkResolvedObject(ExecutionState &state,
     return ((fixedSize == 0 && address==mo->address) || (address - mo->address < fixedSize));
   }
 
-  ref<Expr> inRange = UltExpr::create(
-    ConstantExpr::create(address - mo->address, Context::get().getPointerWidth()),
-    mo->size
-  );
-  /* TODO: what happens if (address - mo->address) may be greater than size? */
-  bool mayBeTrue;
-  if (!solver->mayBeTrue(state.constraints, inRange, mayBeTrue, state.queryMetaData)) {
+  ref<Expr> eqZero = Expr::createIsZero(mo->size);
+  bool mustBeZero;
+  if (!solver->mustBeTrue(state.constraints, eqZero, mustBeZero, state.queryMetaData)) {
     return false;
   }
-  return mayBeTrue;
+
+  if (mustBeZero) {
+    return address == mo->address;
+  } else {
+    ref<Expr> inRange = UltExpr::create(
+      ConstantExpr::create(address - mo->address, Context::get().getPointerWidth()),
+      mo->size
+    );
+    bool mayBeTrue;
+    if (!solver->mayBeTrue(state.constraints, inRange, mayBeTrue, state.queryMetaData)) {
+      return false;
+    }
+    return mayBeTrue;
+  }
 }
 
 bool AddressSpace::resolveOne(ExecutionState &state,
