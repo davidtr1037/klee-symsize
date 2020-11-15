@@ -455,6 +455,7 @@ private:
   void dumpStates();
   void dumpPTree();
   size_t getCapacity(ExecutionState &state, ref<Expr> size);
+  void setTaint(ExecutionState &state, ref<Expr> size);
 
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,

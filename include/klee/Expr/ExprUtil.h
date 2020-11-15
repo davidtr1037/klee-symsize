@@ -47,6 +47,8 @@ namespace klee {
   public:
     std::set<const Array *> results;
   };
+
+  bool isTaintedExpr(ref<Expr> e);
 }
 
 #endif /* KLEE_EXPRUTIL_H */

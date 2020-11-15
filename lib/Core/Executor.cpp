@@ -1102,7 +1102,8 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       }
     }
 
-    if (DebugTaint && condition->isTainted) {
+    /* TODO: check using class field? */
+    if (DebugTaint && isTaintedExpr(condition)) {
       Instruction *lastInst;
       const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
       errs() << "TAINT " << info.file << ":" << info.line << "\n";
@@ -3524,8 +3525,8 @@ void Executor::executeAlloc(ExecutionState &state,
       capacity = c->getZExtValue();
     } else {
       capacity = getCapacity(state, size);
-      size->isTainted = true;
       klee_message("allocating symbolic size (capacity = %lu)", capacity);
+      setTaint(state, size);
     }
 
     MemoryObject *mo =
@@ -4331,6 +4332,18 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   }
 
   return capacity;
+}
+
+void Executor::setTaint(ExecutionState &state, ref<Expr> size) {
+  std::vector<ref<ReadExpr>> reads;
+  findReads(size, true, reads);
+  for (ref<ReadExpr> re : reads) {
+    if (re->updates.root->isSymbolicArray() && isa<ConstantExpr>(re->index)) {
+      re->isTainted = true;
+    } else {
+      assert(0);
+    }
+  }
 }
 
 ///
