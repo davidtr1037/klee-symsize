@@ -15,6 +15,10 @@ using namespace klee;
 
 /***/
 
+KInstruction::KInstruction() : loop(nullptr) {
+
+}
+
 KInstruction::~KInstruction() {
   delete[] operands;
 }

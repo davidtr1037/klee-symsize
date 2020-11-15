@@ -49,6 +49,8 @@
 #if LLVM_VERSION_CODE >= LLVM_VERSION(7, 0)
 #include "llvm/Transforms/Utils.h"
 #endif
+#include <llvm/IR/Dominators.h>
+#include "llvm/Analysis/LoopInfo.h"
 
 #include <sstream>
 
@@ -358,6 +360,30 @@ void KModule::manifest(InterpreterHandler *ih, bool forceSourceOutput) {
     }
     llvm::errs() << "]\n";
   }
+
+  collectLoopInfo();
+}
+
+void KModule::collectLoopInfo() {
+  for (Function &f : *module) {
+    llvm::DominatorTree* dom = new llvm::DominatorTree();
+    if (f.isDeclaration()) {
+      continue;
+    }
+
+    dom->recalculate(f);
+    llvm::LoopInfo* li = new llvm::LoopInfo(*dom);
+    for (Loop *loop : *li) {
+      visitLoop(f, loop);
+    }
+  }
+}
+
+/* TODO: is it the correct solution? */
+void KModule::visitLoop(Function &f, Loop *loop) {
+  Instruction *term = loop->getHeader()->getTerminator();
+  KInstruction *ki = instructionMap[term];
+  ki->loop = loop;
 }
 
 void KModule::checkModule() {
@@ -490,6 +516,7 @@ KFunction::KFunction(llvm::Function *_function,
       }
 
       instructions[i++] = ki;
+      km->instructionMap[inst] = ki;
     }
   }
 }

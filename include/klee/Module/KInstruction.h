@@ -15,6 +15,7 @@
 
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include <vector>
 
@@ -41,8 +42,11 @@ namespace klee {
     int *operands;
     /// Destination register index.
     unsigned dest;
+    /* TODO: add docs */
+    llvm::Loop *loop;
 
   public:
+    KInstruction();
     virtual ~KInstruction();
     std::string getSourceLocation() const;
 

@@ -14,6 +14,7 @@
 #include "klee/Core/Interpreter.h"
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include <map>
 #include <memory>
@@ -104,6 +105,9 @@ namespace klee {
     // Functions which are part of KLEE runtime
     std::set<const llvm::Function*> internalFunctions;
 
+    /* TODO: add docs */
+    std::map<llvm::Instruction*, KInstruction*> instructionMap;
+
   private:
     // Mark function with functionName as part of the KLEE runtime
     void addInternalFunction(const char* functionName);
@@ -124,6 +128,12 @@ namespace klee {
     ///
     // FIXME: ihandler should not be here
     void manifest(InterpreterHandler *ih, bool forceSourceOutput);
+
+    /* TODO: add docs */
+    void collectLoopInfo();
+
+    /* TODO: add docs */
+    void visitLoop(llvm::Function &f, llvm::Loop *loop);
 
     /// Link the provided modules together as one KLEE module.
     ///
