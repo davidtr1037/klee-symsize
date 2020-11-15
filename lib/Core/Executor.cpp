@@ -1094,7 +1094,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
   } else {
     Loop *loop = current.prevPC->loop;
     if (loop) {
-      if (DebugLoopForks && loop) {
+      if (DebugLoopForks) {
         errs() << current.stack.back().kf->function->getName() << "\n";
         Instruction *lastInst;
         const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
@@ -1103,7 +1103,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     }
 
     /* TODO: check using class field? */
-    if (DebugTaint && isTaintedExpr(condition)) {
+    if (DebugTaint && loop && isTaintedExpr(condition)) {
       Instruction *lastInst;
       const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
       errs() << "TAINT " << info.file << ":" << info.line << "\n";
