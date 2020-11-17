@@ -108,7 +108,9 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     steppedInstructions(state.steppedInstructions),
     instsSinceCovNew(state.instsSinceCovNew),
     coveredNew(state.coveredNew),
-    forkDisabled(state.forkDisabled) {
+    forkDisabled(state.forkDisabled),
+    /* TODO: copy-on-write? */
+    taintedExprs(state.taintedExprs) {
   for (const auto &cur_mergehandler: openMergeStack)
     cur_mergehandler->addOpenState(this);
 }
@@ -372,14 +374,28 @@ void ExecutionState::addTaintedExpr(std::string name, ref<Expr> offset) {
   exprs.push_back(offset);
 }
 
+bool ExecutionState::hasTaintedExpr(std::string name, ref<Expr> offset) {
+  auto i = taintedExprs.find(name);
+  if (i != taintedExprs.end()) {
+    for (ref<Expr> e : i->second) {
+      if (*e == *offset) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool ExecutionState::isTaintedExpr(ref<Expr> e) {
   TaintVisitor visitor(*this);
   visitor.visit(e);
   return visitor.isTainted;
 }
 
-ExprVisitor::Action TaintVisitor::visitExpr(const Expr &e) {
-  if (e.isTainted) {
+ExprVisitor::Action TaintVisitor::visitRead(const ReadExpr &e) {
+  const std::string &name = e.updates.root->getName();
+  if (state.hasTaintedExpr(name, e.index)) {
     isTainted = true;
     return Action::skipChildren();
   } else {

@@ -4341,7 +4341,7 @@ void Executor::setTaint(ExecutionState &state, ref<Expr> size) {
   findReads(size, true, reads);
   for (ref<ReadExpr> re : reads) {
     if (re->updates.root->isSymbolicArray() && isa<ConstantExpr>(re->index)) {
-      re->isTainted = true;
+      state.addTaintedExpr(re->updates.root->getName(), re->index);
     } else {
       assert(0);
     }

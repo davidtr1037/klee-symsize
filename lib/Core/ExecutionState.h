@@ -191,6 +191,8 @@ public:
 
   void addTaintedExpr(std::string name, ref<Expr> offset);
 
+  bool hasTaintedExpr(std::string name, ref<Expr> offset);
+
   bool isTaintedExpr(ref<Expr> e);
 };
 
@@ -202,7 +204,7 @@ struct ExecutionStateIDCompare {
 
 class TaintVisitor : public ExprVisitor {
 protected:
-  Action visitExpr(const Expr &e);
+  Action visitRead(const ReadExpr &e);
 
 public:
   TaintVisitor(ExecutionState &state) : state(state), isTainted(false) {}
