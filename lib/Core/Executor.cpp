@@ -4335,7 +4335,6 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   return capacity;
 }
 
-/* TODO: add to the state a list of tainted pairs (array, indices) */
 void Executor::setTaint(ExecutionState &state, ref<Expr> size) {
   std::vector<ref<ReadExpr>> reads;
   findReads(size, true, reads);
