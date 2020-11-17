@@ -403,3 +403,18 @@ ExprVisitor::Action TaintVisitor::visitRead(const ReadExpr &e) {
     return Action::doChildren();
   }
 }
+
+ExecutionContext::ExecutionContext(ExecutionState &state) {
+  for (StackFrame &sf : state.stack) {
+    const InstructionInfo &ii = *state.prevPC->info;
+    Function *f = sf.kf->function;
+    CodeLocation location(ii.file, ii.line, f->getName());
+    trace.push_back(location);
+  }
+}
+
+void ExecutionContext::dump() const {
+  for (const CodeLocation &location : trace) {
+    location.dump();
+  }
+}

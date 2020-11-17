@@ -212,6 +212,56 @@ public:
   bool isTainted;
 };
 
+struct CodeLocation {
+
+  CodeLocation(std::string file, unsigned line, std::string function) :
+    file(file), line(line), function(function) {
+
+  }
+
+  bool operator==(const CodeLocation &other) const {
+    return file == other.file && line == other.line &&  function == other.function;
+  }
+
+  void dump() const {
+    llvm::errs() << file << ":" << line << " (" << function << ")" << "\n";
+  }
+
+  std::string file;
+  unsigned line;
+  std::string function;
+};
+
+class ExecutionContext {
+
+public:
+
+  ExecutionContext(ExecutionState &state);
+
+  bool operator==(const ExecutionContext &other) const {
+    return trace == other.trace;
+  }
+
+  void dump() const;
+
+  std::vector<CodeLocation> trace;
+};
+
+struct ExecutionContextHash {
+
+  unsigned operator() (const ExecutionContext &context) const {
+    unsigned result = 0;
+    for (const CodeLocation &location : context.trace) {
+      unsigned h1 = std::hash<std::string>()(location.file);
+      unsigned h2 = std::hash<unsigned>()(location.line);
+      unsigned h3 = std::hash<std::string>()(location.function);
+      result ^= h1 ^ h2 ^ h3;
+    }
+    return result;
+  }
+
+};
+
 }
 
 #endif /* KLEE_EXECUTIONSTATE_H */

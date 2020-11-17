@@ -416,6 +416,7 @@ cl::opt<bool> AllocateSymSize("allocate-sym-size", cl::init(false), cl::desc("")
 cl::opt<unsigned> Capacity("capacity", cl::desc(""), cl::init(100u));
 cl::opt<bool> DebugTaint("debug-taint", cl::init(false), cl::desc(""));
 cl::opt<bool> DebugLoopForks("debug-loop-forks", cl::init(false), cl::desc(""));
+cl::opt<bool> CollectLoopStats("collect-loop-stats", cl::init(false), cl::desc(""));
 
 } // namespace
 
@@ -1100,14 +1101,15 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
         const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
         errs() << "FORK " << info.file << ":" << info.line << "\n";
       }
-    }
-
-    /* TODO: check using class field? */
-    /* TODO: add stats */
-    if (DebugTaint && loop && current.isTaintedExpr(condition)) {
-      Instruction *lastInst;
-      const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
-      errs() << "TAINT " << info.file << ":" << info.line << "\n";
+      if (DebugTaint && current.isTaintedExpr(condition)) {
+        Instruction *lastInst;
+        const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
+        errs() << "TAINT " << info.file << ":" << info.line << "\n";
+        current.dumpStack(errs());
+      }
+      if (CollectLoopStats) {
+        collectLoopStats(current);
+      }
     }
 
     TimerStatIncrementer timer(stats::forkTime);
@@ -4002,6 +4004,8 @@ void Executor::runFunctionAsMain(Function *f,
   run(*state);
   processTree = nullptr;
 
+  dumpLoopStats();
+
   // hack to clear memory objects
   delete memory;
   memory = new MemoryManager(NULL);
@@ -4344,6 +4348,24 @@ void Executor::setTaint(ExecutionState &state, ref<Expr> size) {
     } else {
       assert(0);
     }
+  }
+}
+
+void Executor::collectLoopStats(ExecutionState &state) {
+  ExecutionContext ec(state);
+  if (loopStats.find(ec) == loopStats.end()) {
+    loopStats[ec] = 0;
+  }
+  loopStats[ec]++;
+}
+
+void Executor::dumpLoopStats() {
+  for (auto i : loopStats) {
+    const ExecutionContext &ec = i.first;
+    uint64_t count = i.second;
+    errs() << "---\n";
+    errs() << "count: " << count << "\n";
+    ec.dump();
   }
 }
 

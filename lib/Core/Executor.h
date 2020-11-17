@@ -219,6 +219,8 @@ private:
   /// `nullptr` if merging is disabled
   MergingSearcher *mergingSearcher = nullptr;
 
+  std::unordered_map<ExecutionContext, uint64_t, ExecutionContextHash> loopStats;
+
   llvm::Function* getTargetFunction(llvm::Value *calledVal,
                                     ExecutionState &state);
   
@@ -456,6 +458,8 @@ private:
   void dumpPTree();
   size_t getCapacity(ExecutionState &state, ref<Expr> size);
   void setTaint(ExecutionState &state, ref<Expr> size);
+  void collectLoopStats(ExecutionState &state);
+  void dumpLoopStats();
 
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,
