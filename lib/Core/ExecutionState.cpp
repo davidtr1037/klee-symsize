@@ -374,6 +374,7 @@ void ExecutionState::addTaintedExpr(std::string name, ref<Expr> offset) {
   exprs.push_back(offset);
 }
 
+/* TODO: handle symbolic offsets... */
 bool ExecutionState::hasTaintedExpr(std::string name, ref<Expr> offset) {
   auto i = taintedExprs.find(name);
   if (i != taintedExprs.end()) {
