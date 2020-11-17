@@ -16,6 +16,7 @@
 #include "klee/ADT/TreeStream.h"
 #include "klee/Expr/Constraints.h"
 #include "klee/Expr/Expr.h"
+#include "klee/Expr/ExprVisitor.h"
 #include "klee/Module/KInstIterator.h"
 #include "klee/Solver/Solver.h"
 #include "klee/System/Time.h"
@@ -65,6 +66,8 @@ struct StackFrame {
 
 /// @brief ExecutionState representing a path under exploration
 class ExecutionState {
+  typedef std::vector<ref<Expr>> ExprSet;
+
 #ifdef KLEE_UNITTEST
 public:
 #else
@@ -153,6 +156,8 @@ public:
   /// @brief Disables forking for this state. Set by user code
   bool forkDisabled;
 
+  std::map<std::string, ExprSet> taintedExprs;
+
 public:
   #ifdef KLEE_UNITTEST
   // provide this function only in the context of unittests
@@ -184,6 +189,8 @@ public:
   std::uint32_t getID() const { return id; };
   void setID() { id = nextID++; };
 
+  void addTaintedExpr(std::string name, ref<Expr> offset);
+
   bool isTaintedExpr(ref<Expr> e);
 };
 
@@ -192,6 +199,17 @@ struct ExecutionStateIDCompare {
     return a->getID() < b->getID();
   }
 };
+
+class TaintVisitor : public ExprVisitor {
+protected:
+  Action visitExpr(const Expr &e);
+
+public:
+  TaintVisitor(ExecutionState &state) : state(state), isTainted(false) {}
+  ExecutionState &state;
+  bool isTainted;
+};
+
 }
 
 #endif /* KLEE_EXECUTIONSTATE_H */

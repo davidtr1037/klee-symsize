@@ -119,15 +119,6 @@ ExprVisitor::Action ConstantArrayFinder::visitRead(const ReadExpr &re) {
   return Action::doChildren();
 }
 
-ExprVisitor::Action TaintVisitor::visitExpr(const Expr &e) {
-  if (e.isTainted) {
-    isTainted = true;
-    return Action::skipChildren();
-  } else {
-    return Action::doChildren();
-  }
-}
-
 }
 
 template<typename InputIterator>

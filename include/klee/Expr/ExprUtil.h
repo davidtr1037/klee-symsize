@@ -48,15 +48,6 @@ namespace klee {
     std::set<const Array *> results;
   };
 
-  class TaintVisitor : public ExprVisitor {
-  protected:
-    Action visitExpr(const Expr &e);
-
-  public:
-    TaintVisitor() : isTainted(false) {}
-    bool isTainted;
-  };
-
 }
 
 #endif /* KLEE_EXPRUTIL_H */

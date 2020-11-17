@@ -12,7 +12,7 @@
 #include "Memory.h"
 
 #include "klee/Expr/Expr.h"
-#include "klee/Expr/ExprUtil.h"
+#include "klee/Expr/ExprVisitor.h"
 #include "klee/Module/Cell.h"
 #include "klee/Module/InstructionInfoTable.h"
 #include "klee/Module/KInstruction.h"
@@ -361,8 +361,28 @@ void ExecutionState::addConstraint(ref<Expr> e) {
   c.addConstraint(e);
 }
 
+void ExecutionState::addTaintedExpr(std::string name, ref<Expr> offset) {
+  ExprSet &exprs = taintedExprs[name];
+  for (ref<Expr> e : exprs) {
+    if (*e == *offset) {
+      return;
+    }
+  }
+
+  exprs.push_back(offset);
+}
+
 bool ExecutionState::isTaintedExpr(ref<Expr> e) {
-  TaintVisitor visitor;
+  TaintVisitor visitor(*this);
   visitor.visit(e);
   return visitor.isTainted;
+}
+
+ExprVisitor::Action TaintVisitor::visitExpr(const Expr &e) {
+  if (e.isTainted) {
+    isTainted = true;
+    return Action::skipChildren();
+  } else {
+    return Action::doChildren();
+  }
 }
