@@ -120,7 +120,6 @@ ExprVisitor::Action ConstantArrayFinder::visitRead(const ReadExpr &re) {
 }
 
 ExprVisitor::Action TaintVisitor::visitExpr(const Expr &e) {
-  llvm::errs() << "IS_TAINTED " << &e << " " << e.isTainted << "\n"; e.dump();
   if (e.isTainted) {
     isTainted = true;
     return Action::skipChildren();
