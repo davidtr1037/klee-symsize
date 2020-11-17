@@ -183,6 +183,8 @@ public:
 
   std::uint32_t getID() const { return id; };
   void setID() { id = nextID++; };
+
+  bool isTaintedExpr(ref<Expr> e);
 };
 
 struct ExecutionStateIDCompare {

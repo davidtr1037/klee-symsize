@@ -119,21 +119,15 @@ ExprVisitor::Action ConstantArrayFinder::visitRead(const ReadExpr &re) {
   return Action::doChildren();
 }
 
-class TaintVisitor : public ExprVisitor {
-protected:
-  Action visitExpr(const Expr &e) {
-    if (e.isTainted) {
-      isTainted = true;
-      return Action::skipChildren();
-    } else {
-      return Action::doChildren();
-    }
+ExprVisitor::Action TaintVisitor::visitExpr(const Expr &e) {
+  llvm::errs() << "IS_TAINTED " << &e << " " << e.isTainted << "\n"; e.dump();
+  if (e.isTainted) {
+    isTainted = true;
+    return Action::skipChildren();
+  } else {
+    return Action::doChildren();
   }
-
-public:
-  TaintVisitor() : isTainted(false) {}
-  bool isTainted;
-};
+}
 
 }
 
@@ -156,9 +150,3 @@ template void klee::findSymbolicObjects<A>(A, A, std::vector<const Array*> &);
 
 typedef std::set< ref<Expr> >::iterator B;
 template void klee::findSymbolicObjects<B>(B, B, std::vector<const Array*> &);
-
-bool klee::isTaintedExpr(ref<Expr> e) {
-  TaintVisitor visitor;
-  visitor.visit(e);
-  return visitor.isTainted;
-}

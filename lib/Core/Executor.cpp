@@ -1103,7 +1103,8 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     }
 
     /* TODO: check using class field? */
-    if (DebugTaint && loop && isTaintedExpr(condition)) {
+    /* TODO: add stats */
+    if (DebugTaint && loop && current.isTaintedExpr(condition)) {
       Instruction *lastInst;
       const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
       errs() << "TAINT " << info.file << ":" << info.line << "\n";
@@ -4334,6 +4335,7 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   return capacity;
 }
 
+/* TODO: add to the state a list of tainted pairs (array, indices) */
 void Executor::setTaint(ExecutionState &state, ref<Expr> size) {
   std::vector<ref<ReadExpr>> reads;
   findReads(size, true, reads);

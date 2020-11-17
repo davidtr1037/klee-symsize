@@ -12,6 +12,7 @@
 #include "Memory.h"
 
 #include "klee/Expr/Expr.h"
+#include "klee/Expr/ExprUtil.h"
 #include "klee/Module/Cell.h"
 #include "klee/Module/InstructionInfoTable.h"
 #include "klee/Module/KInstruction.h"
@@ -358,4 +359,10 @@ void ExecutionState::dumpStack(llvm::raw_ostream &out) const {
 void ExecutionState::addConstraint(ref<Expr> e) {
   ConstraintManager c(constraints);
   c.addConstraint(e);
+}
+
+bool ExecutionState::isTaintedExpr(ref<Expr> e) {
+  TaintVisitor visitor;
+  visitor.visit(e);
+  return visitor.isTainted;
 }
