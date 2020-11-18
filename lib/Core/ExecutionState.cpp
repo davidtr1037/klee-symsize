@@ -405,11 +405,20 @@ ExprVisitor::Action TaintVisitor::visitRead(const ReadExpr &e) {
 }
 
 ExecutionContext::ExecutionContext(ExecutionState &state) {
-  for (StackFrame &sf : state.stack) {
-    const InstructionInfo &ii = *state.prevPC->info;
+  const KInstruction *kinst = state.prevPC;
+  for (auto i = state.stack.rbegin(); i != state.stack.rend(); i++) {
+    StackFrame &sf = *i;
     Function *f = sf.kf->function;
-    CodeLocation location(ii.file, ii.line, f->getName());
+    if (f->getName() == "__uClibc_main") {
+      /* not interesting from that point on... */
+      break;
+    }
+
+    CodeLocation location(kinst ? kinst->info->file : "unknown",
+                          kinst ? kinst->info->line : 0,
+                          f->getName());
     trace.push_back(location);
+    kinst = sf.caller;
   }
 }
 
