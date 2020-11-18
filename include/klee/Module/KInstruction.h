@@ -44,6 +44,10 @@ namespace klee {
     unsigned dest;
     /* TODO: add docs */
     llvm::Loop *loop;
+    /* TODO: add docs */
+    bool isLoopEntry;
+    /* TODO: add docs */
+    bool isLoopExit;
 
   public:
     KInstruction();

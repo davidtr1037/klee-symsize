@@ -15,7 +15,7 @@ using namespace klee;
 
 /***/
 
-KInstruction::KInstruction() : loop(nullptr) {
+KInstruction::KInstruction() : loop(nullptr), isLoopEntry(false), isLoopExit(false) {
 
 }
 

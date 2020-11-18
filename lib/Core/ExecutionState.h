@@ -59,6 +59,9 @@ struct StackFrame {
   // of intrinsic lowering.
   MemoryObject *varargs;
 
+  /* TODO: add docs */
+  bool isExecutingLoop;
+
   StackFrame(KInstIterator caller, KFunction *kf);
   StackFrame(const StackFrame &s);
   ~StackFrame();

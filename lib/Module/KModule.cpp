@@ -49,8 +49,9 @@
 #if LLVM_VERSION_CODE >= LLVM_VERSION(7, 0)
 #include "llvm/Transforms/Utils.h"
 #endif
-#include <llvm/IR/Dominators.h>
+#include "llvm/IR/Dominators.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/ADT/SmallVector.h"
 
 #include <sstream>
 
@@ -381,9 +382,20 @@ void KModule::collectLoopInfo() {
 
 /* TODO: is it the correct solution? */
 void KModule::visitLoop(Function &f, Loop *loop) {
+  /* TODO: mark all basic block? */
   Instruction *term = loop->getHeader()->getTerminator();
   KInstruction *ki = instructionMap[term];
   ki->loop = loop;
+  ki->isLoopEntry = true;
+
+  SmallVector<BasicBlock *, 10> blocks;
+  loop->getExitBlocks(blocks);
+  for (BasicBlock *bb : blocks) {
+    /* TODO: mark all basic block? */
+    Instruction *term = bb->getTerminator();
+    KInstruction *ki = instructionMap[term];
+    ki->isLoopExit = true;
+  }
 }
 
 void KModule::checkModule() {

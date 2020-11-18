@@ -1102,7 +1102,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       errs() << "FORK " << info.file << ":" << info.line << "\n";
       condition->dump();
     }
-    if (loop) {
+    if (current.stack.back().isExecutingLoop) {
       if (DebugLoopForks) {
         errs() << current.stack.back().kf->function->getName() << "\n";
         Instruction *lastInst;
@@ -1769,6 +1769,14 @@ Function* Executor::getTargetFunction(Value *calledVal, ExecutionState &state) {
 }
 
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
+  /* TODO: remove assert */
+  assert(!(ki->isLoopEntry && ki->isLoopExit));
+  if (ki->isLoopEntry) {
+    state.stack.back().isExecutingLoop = true;
+  } else if (ki->isLoopExit) {
+    state.stack.back().isExecutingLoop = false;
+  }
+
   Instruction *i = ki->inst;
   switch (i->getOpcode()) {
     // Control flow
@@ -4012,7 +4020,9 @@ void Executor::runFunctionAsMain(Function *f,
   run(*state);
   processTree = nullptr;
 
-  dumpLoopStats();
+  if (CollectLoopStats) {
+    dumpLoopStats();
+  }
 
   // hack to clear memory objects
   delete memory;
