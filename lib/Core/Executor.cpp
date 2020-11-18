@@ -4367,7 +4367,7 @@ void Executor::dumpLoopStats() {
     klee_message("---");
     klee_message("count: %lu", count);
     for (const CodeLocation &l : ec.trace) {
-      klee_message("%s:%u (%s)", l.file.data(), l.line, l.function.data());
+      klee_message("%s:%u (%s)", basename(l.file.data()), l.line, l.function.data());
     }
     klee_message("---");
   }
