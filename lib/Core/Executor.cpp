@@ -1094,29 +1094,25 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     return StatePair(0, &current);
   } else {
-    Loop *loop = current.prevPC->loop;
-    if (DebugForks) {
-      errs() << current.stack.back().kf->function->getName() << "\n";
+    if (DebugForks || DebugLoopForks || DebugTaint || CollectLoopStats) {
       Instruction *lastInst;
       const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
-      errs() << "FORK " << info.file << ":" << info.line << "\n";
-      condition->dump();
-    }
-    if (current.stack.back().isExecutingLoop) {
-      if (DebugLoopForks) {
-        errs() << current.stack.back().kf->function->getName() << "\n";
-        Instruction *lastInst;
-        const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
-        errs() << "LOOP FORK " << info.file << ":" << info.line << "\n";
+      Function *f = current.stack.back().kf->function;
+      if (DebugForks) {
+        errs() << "FORK " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
+        condition->dump();
       }
       if (DebugTaint && current.isTaintedExpr(condition)) {
-        Instruction *lastInst;
-        const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
-        errs() << "TAINT " << info.file << ":" << info.line << "\n";
-        current.dumpStack(errs());
+        errs() << "TAINT " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
       }
-      if (CollectLoopStats) {
-        collectLoopStats(current);
+
+      if (current.stack.back().isExecutingLoop) {
+        if (DebugLoopForks) {
+          errs() << "LOOP FORK " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
+        }
+        if (CollectLoopStats && current.isTaintedExpr(condition)) {
+          collectLoopStats(current);
+        }
       }
     }
 
