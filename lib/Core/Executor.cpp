@@ -1769,8 +1769,6 @@ Function* Executor::getTargetFunction(Value *calledVal, ExecutionState &state) {
 }
 
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
-  /* TODO: remove assert */
-  assert(!(ki->isLoopEntry && ki->isLoopExit));
   if (ki->isLoopEntry) {
     state.stack.back().isExecutingLoop = true;
   } else if (ki->isLoopExit) {
