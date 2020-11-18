@@ -414,6 +414,7 @@ cl::opt<bool> DebugCheckForImpliedValues(
 
 cl::opt<bool> AllocateSymSize("allocate-sym-size", cl::init(false), cl::desc(""));
 cl::opt<unsigned> Capacity("capacity", cl::desc(""), cl::init(100u));
+cl::opt<bool> DebugForks("debug-forks", cl::init(false), cl::desc(""));
 cl::opt<bool> DebugTaint("debug-taint", cl::init(false), cl::desc(""));
 cl::opt<bool> DebugLoopForks("debug-loop-forks", cl::init(false), cl::desc(""));
 cl::opt<bool> CollectLoopStats("collect-loop-stats", cl::init(false), cl::desc(""));
@@ -1094,12 +1095,19 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     return StatePair(0, &current);
   } else {
     Loop *loop = current.prevPC->loop;
+    if (DebugForks) {
+      errs() << current.stack.back().kf->function->getName() << "\n";
+      Instruction *lastInst;
+      const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
+      errs() << "FORK " << info.file << ":" << info.line << "\n";
+      condition->dump();
+    }
     if (loop) {
       if (DebugLoopForks) {
         errs() << current.stack.back().kf->function->getName() << "\n";
         Instruction *lastInst;
         const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
-        errs() << "FORK " << info.file << ":" << info.line << "\n";
+        errs() << "LOOP FORK " << info.file << ":" << info.line << "\n";
       }
       if (DebugTaint && current.isTaintedExpr(condition)) {
         Instruction *lastInst;
