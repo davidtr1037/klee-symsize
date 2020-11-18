@@ -1769,6 +1769,7 @@ Function* Executor::getTargetFunction(Value *calledVal, ExecutionState &state) {
 }
 
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
+  /* TODO: won't work with nested loops */
   if (ki->isLoopEntry) {
     state.stack.back().isExecutingLoop = true;
   } else if (ki->isLoopExit) {
