@@ -449,7 +449,7 @@ Executor::Executor(LLVMContext &ctx, const InterpreterOptions &opts,
       pathWriter(0), symPathWriter(0), specialFunctionHandler(0), timers{time::Span(TimerInterval)},
       replayKTest(0), replayPath(0), usingSeeds(0),
       atMemoryLimit(false), inhibitForking(false), haltExecution(false),
-      ivcEnabled(false), debugLogBuffer(debugBufferString) {
+      ivcEnabled(false), debugLogBuffer(debugBufferString), symbolicSizeAllocations(0) {
 
 
   const time::Span maxTime{MaxTime};
@@ -3538,6 +3538,7 @@ void Executor::executeAlloc(ExecutionState &state,
       ref<ConstantExpr> c = dyn_cast<ConstantExpr>(size);
       capacity = c->getZExtValue();
     } else {
+      symbolicSizeAllocations++;
       capacity = getCapacity(state, size);
       klee_message("allocating symbolic size (capacity = %lu)", capacity);
       setTaint(state, size);
@@ -4015,6 +4016,9 @@ void Executor::runFunctionAsMain(Function *f,
   run(*state);
   processTree = nullptr;
 
+  if (AllocateSymSize) {
+    klee_message("symbolic-size allocations: %lu", symbolicSizeAllocations);
+  }
   if (CollectLoopStats) {
     dumpLoopStats();
   }

@@ -221,6 +221,8 @@ private:
 
   std::unordered_map<ExecutionContext, uint64_t, ExecutionContextHash> loopStats;
 
+  uint64_t symbolicSizeAllocations;
+
   llvm::Function* getTargetFunction(llvm::Value *calledVal,
                                     ExecutionState &state);
   
