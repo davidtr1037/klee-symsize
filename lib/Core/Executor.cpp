@@ -4361,6 +4361,12 @@ void Executor::collectLoopStats(ExecutionState &state) {
 
 void Executor::dumpLoopStats() {
   klee_message("Loop Statistics");
+  uint64_t total = 0;
+  for (auto i : loopStats) {
+    total += i.second;
+  }
+  klee_message("total count: %lu", total);
+
   for (auto i : loopStats) {
     const ExecutionContext &ec = i.first;
     uint64_t count = i.second;
