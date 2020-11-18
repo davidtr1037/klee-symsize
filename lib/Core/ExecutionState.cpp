@@ -379,7 +379,8 @@ bool ExecutionState::hasTaintedExpr(std::string name, ref<Expr> offset) {
   auto i = taintedExprs.find(name);
   if (i != taintedExprs.end()) {
     for (ref<Expr> e : i->second) {
-      if (*e == *offset) {
+      /* TODO: this is a conservative check, use the solver? */
+      if (!isa<ConstantExpr>(offset) || !isa<ConstantExpr>(e) || *e == *offset) {
         return true;
       }
     }
