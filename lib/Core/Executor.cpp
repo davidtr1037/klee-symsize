@@ -4360,12 +4360,16 @@ void Executor::collectLoopStats(ExecutionState &state) {
 }
 
 void Executor::dumpLoopStats() {
+  klee_message("Loop Statistics");
   for (auto i : loopStats) {
     const ExecutionContext &ec = i.first;
     uint64_t count = i.second;
-    errs() << "---\n";
-    errs() << "count: " << count << "\n";
-    ec.dump();
+    klee_message("---");
+    klee_message("count: %lu", count);
+    for (const CodeLocation &l : ec.trace) {
+      klee_message("%s:%u (%s)", l.file.data(), l.line, l.function.data());
+    }
+    klee_message("---");
   }
 }
 
