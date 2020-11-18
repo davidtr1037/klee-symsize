@@ -397,6 +397,11 @@ bool ExecutionState::isTaintedExpr(ref<Expr> e) {
 }
 
 ExprVisitor::Action TaintVisitor::visitRead(const ReadExpr &e) {
+  for (const UpdateNode *un = e.updates.head.get(); un != nullptr; un = un->next.get()) {
+    visit(un->index);
+    visit(un->value);
+  }
+
   const std::string &name = e.updates.root->getName();
   if (state.hasTaintedExpr(name, e.index)) {
     isTainted = true;
