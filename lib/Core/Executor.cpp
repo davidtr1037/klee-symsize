@@ -4360,10 +4360,9 @@ void Executor::setTaint(ExecutionState &state, ref<Expr> size) {
   std::vector<ref<ReadExpr>> reads;
   findReads(size, true, reads);
   for (ref<ReadExpr> re : reads) {
+    /* TODO: check that array updates are not missed */
     if (re->updates.root->isSymbolicArray()) {
       state.addTaintedExpr(re->updates.root->getName(), re->index);
-    } else {
-      assert(0);
     }
   }
 }
