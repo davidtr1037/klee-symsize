@@ -3540,7 +3540,8 @@ void Executor::executeAlloc(ExecutionState &state,
     } else {
       symbolicSizeAllocations++;
       capacity = getCapacity(state, size);
-      klee_message("allocating symbolic size (capacity = %lu)", capacity);
+      const InstructionInfo &info = kmodule->infos->getInfo(*state.prevPC->inst);
+      klee_message("allocating symbolic size (capacity = %lu, at %s:%u)", capacity, info.file.data(), info.line);
       setTaint(state, size);
     }
 
