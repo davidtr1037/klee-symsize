@@ -929,38 +929,38 @@ void SpecialFunctionHandler::handleDivRemOverflow(ExecutionState &state,
 void SpecialFunctionHandler::handleOpenLoopMerge(ExecutionState &state,
                                                  KInstruction *target,
                                                  std::vector<ref<Expr>> &arguments) {
-  if (!UseLoopMerge) {
-    klee_warning_once(0, "klee_loop_open_merge ignored, use '-use-loop-merge'");
-    return;
-  }
+  //if (!UseLoopMerge) {
+  //  klee_warning_once(0, "klee_loop_open_merge ignored, use '-use-loop-merge'");
+  //  return;
+  //}
 
-  state.openLoopHandlerStack.push_back(ref<LoopHandler>(new LoopHandler(&executor, &state)));
-  if (DebugLoopHandler) {
-    llvm::errs() << "open merge: " << &state << "\n";
-  }
+  //state.openLoopHandlerStack.push_back(ref<LoopHandler>(new LoopHandler(&executor, &state)));
+  //if (DebugLoopHandler) {
+  //  llvm::errs() << "open merge: " << &state << "\n";
+  //}
 }
 
 /* TODO: remove? */
 void SpecialFunctionHandler::handleCloseLoopMerge(ExecutionState &state,
                                                   KInstruction *target,
                                                   std::vector<ref<Expr> > &arguments) {
-  if (!UseLoopMerge) {
-    klee_warning_once(0, "klee_loop_close_merge ignored, use '-use-loop-merge'");
-    return;
-  }
+  //if (!UseLoopMerge) {
+  //  klee_warning_once(0, "klee_loop_close_merge ignored, use '-use-loop-merge'");
+  //  return;
+  //}
 
-  Instruction *i = target->inst;
-  if (DebugLoopHandler) {
-    llvm::errs() << "close merge: " << &state << " at [" << *i << "]\n";
-  }
+  //Instruction *i = target->inst;
+  //if (DebugLoopHandler) {
+  //  llvm::errs() << "close merge: " << &state << " at [" << *i << "]\n";
+  //}
 
-  if (state.openLoopHandlerStack.empty()) {
-    assert(0);
-  } else {
-    assert(executor.mergingSearcher->inCloseMerge.find(&state) ==
-           executor.mergingSearcher->inCloseMerge.end());
-    executor.mergingSearcher->inCloseMerge.insert(&state);
-    state.openLoopHandlerStack.back()->addClosedState(&state, i);
-    state.openLoopHandlerStack.pop_back();
-  }
+  //if (state.openLoopHandlerStack.empty()) {
+  //  assert(0);
+  //} else {
+  //  assert(executor.mergingSearcher->inCloseMerge.find(&state) ==
+  //         executor.mergingSearcher->inCloseMerge.end());
+  //  executor.mergingSearcher->inCloseMerge.insert(&state);
+  //  state.openLoopHandlerStack.back()->addClosedState(&state, i);
+  //  state.openLoopHandlerStack.pop_back();
+  //}
 }
