@@ -161,9 +161,7 @@ void ConstraintManager::addConstraint(const ref<Expr> &e) {
 }
 
 void ConstraintManager::dump() const {
-    for (ref<Expr> e : constraints) {
-        e->dump();
-    }
+  constraints.dump();
 }
 
 ConstraintManager::ConstraintManager(ConstraintSet &_constraints)
@@ -182,3 +180,9 @@ klee::ConstraintSet::constraint_iterator ConstraintSet::end() const {
 size_t ConstraintSet::size() const noexcept { return constraints.size(); }
 
 void ConstraintSet::push_back(const ref<Expr> &e) { constraints.push_back(e); }
+
+void ConstraintSet::dump() const {
+  for (ref<Expr> e : constraints) {
+    e->dump();
+  }
+}
