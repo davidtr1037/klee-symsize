@@ -64,6 +64,8 @@ public:
   /// \param constraint
   void addConstraint(const ref<Expr> &constraint);
 
+  void dump() const;
+
 private:
   /// Rewrite set of constraints using the visitor
   /// \param visitor constraint rewriter
