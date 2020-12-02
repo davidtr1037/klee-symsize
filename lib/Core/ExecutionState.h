@@ -12,6 +12,7 @@
 
 #include "AddressSpace.h"
 #include "MergeHandler.h"
+#include "LoopHandler.h"
 
 #include "klee/ADT/TreeStream.h"
 #include "klee/Expr/Constraints.h"
@@ -139,6 +140,9 @@ public:
 
   /// @brief The objects handling the klee_open_merge calls this state ran through
   std::vector<ref<MergeHandler>> openMergeStack;
+
+  /* TODO: add docs */
+  std::vector<ref<LoopHandler>> openLoopHandlerStack;
 
   /// @brief The numbers of times this state has run through Executor::stepInstruction
   std::uint64_t steppedInstructions;

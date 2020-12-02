@@ -77,6 +77,7 @@ namespace klee {
   class TreeStreamWriter;
   class MergeHandler;
   class MergingSearcher;
+  class LoopHandler;
   template<class T> class ref;
 
 
@@ -92,6 +93,7 @@ class Executor : public Interpreter {
   friend class StatsTracker;
   friend class MergeHandler;
   friend klee::Searcher *klee::constructUserSearcher(Executor &executor);
+  friend class LoopHandler;
 
 public:
   typedef std::pair<ExecutionState*,ExecutionState*> StatePair;

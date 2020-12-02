@@ -139,6 +139,9 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("__ubsan_handle_mul_overflow", handleMulOverflow, false),
   add("__ubsan_handle_divrem_overflow", handleDivRemOverflow, false),
 
+  add("klee_open_loop_merge", handleOpenLoopMerge, false),
+  add("klee_close_loop_merge", handleCloseLoopMerge, false),
+
 #undef addDNR
 #undef add
 };
@@ -920,4 +923,38 @@ void SpecialFunctionHandler::handleDivRemOverflow(ExecutionState &state,
                                                std::vector<ref<Expr> > &arguments) {
   executor.terminateStateOnError(state, "overflow on division or remainder",
                                  Executor::Overflow);
+}
+
+void SpecialFunctionHandler::handleOpenLoopMerge(ExecutionState &state,
+                                                 KInstruction *target,
+                                                 std::vector<ref<Expr>> &arguments) {
+  if (!UseLoopMerge) {
+    klee_warning_once(0, "klee_loop_open_merge ignored, use '-use-loop-merge'");
+    return;
+  }
+
+  state.openLoopHandlerStack.push_back(ref<LoopHandler>(new LoopHandler(&executor, &state)));
+  llvm::errs() << "open merge: " << &state << "\n";
+}
+
+void SpecialFunctionHandler::handleCloseLoopMerge(ExecutionState &state,
+                                                  KInstruction *target,
+                                                  std::vector<ref<Expr> > &arguments) {
+  if (!UseLoopMerge) {
+    klee_warning_once(0, "klee_loop_close_merge ignored, use '-use-loop-merge'");
+    return;
+  }
+
+  Instruction *i = target->inst;
+  llvm::errs() << "close merge: " << &state << " at [" << *i << "]\n";
+
+  if (state.openLoopHandlerStack.empty()) {
+    assert(0);
+  } else {
+    assert(executor.mergingSearcher->inCloseMerge.find(&state) ==
+           executor.mergingSearcher->inCloseMerge.end());
+    executor.mergingSearcher->inCloseMerge.insert(&state);
+    state.openLoopHandlerStack.back()->addClosedState(&state, i);
+    state.openLoopHandlerStack.pop_back();
+  }
 }

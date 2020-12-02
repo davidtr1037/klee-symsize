@@ -158,6 +158,8 @@ extern "C" {
 
   void klee_open_object_merge();
   void klee_close_object_merge();
+  void klee_open_loop_merge();
+  void klee_close_loop_merge();
 
   /* Get errno value of the current state */
   int klee_get_errno(void);

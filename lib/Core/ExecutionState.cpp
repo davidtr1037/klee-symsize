@@ -88,6 +88,9 @@ ExecutionState::~ExecutionState() {
   for (const auto &cur_mergehandler: openMergeStack){
     cur_mergehandler->removeOpenState(this);
   }
+  for (ref<LoopHandler> handler : openLoopHandlerStack){
+    handler->removeOpenState(this);
+  }
 
   while (!stack.empty()) popFrame();
 }
@@ -106,14 +109,19 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     symbolics(state.symbolics),
     arrayNames(state.arrayNames),
     openMergeStack(state.openMergeStack),
+    openLoopHandlerStack(state.openLoopHandlerStack),
     steppedInstructions(state.steppedInstructions),
     instsSinceCovNew(state.instsSinceCovNew),
     coveredNew(state.coveredNew),
     forkDisabled(state.forkDisabled),
     /* TODO: copy-on-write? */
     taintedExprs(state.taintedExprs) {
-  for (const auto &cur_mergehandler: openMergeStack)
+  for (const auto &cur_mergehandler: openMergeStack) {
     cur_mergehandler->addOpenState(this);
+  }
+  for (ref<LoopHandler> handler : openLoopHandlerStack) {
+    handler->addOpenState(this);
+  }
 }
 
 ExecutionState *ExecutionState::branch() {

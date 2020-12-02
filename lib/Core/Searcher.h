@@ -218,8 +218,10 @@ namespace klee {
 
   extern llvm::cl::opt<bool> UseIncompleteMerge;
   class MergeHandler;
+  class LoopHandler;
   class MergingSearcher : public Searcher {
     friend class MergeHandler;
+    friend class LoopHandler;
 
     private:
 
