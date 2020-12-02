@@ -10,13 +10,18 @@ using namespace llvm;
 
 namespace klee {
 
-llvm::cl::OptionCategory LoopCat("Loop merging options",
-                                  "These options control path merging.");
+cl::OptionCategory LoopCat("Loop merging options",
+                           "These options control path merging.");
 
-llvm::cl::opt<bool> UseLoopMerge(
-    "use-loop-merge", llvm::cl::init(false),
-    llvm::cl::desc(""),
-    llvm::cl::cat(klee::LoopCat));
+cl::opt<bool> UseLoopMerge(
+    "use-loop-merge", cl::init(false),
+    cl::desc(""),
+    cl::cat(klee::LoopCat));
+
+cl::opt<bool> DebugLoopHandler(
+    "debug-loop-handler", cl::init(false),
+    cl::desc(""),
+    cl::cat(klee::LoopCat));
 
 void LoopHandler::addOpenState(ExecutionState *es){
   openStates.push_back(es);
@@ -30,7 +35,7 @@ void LoopHandler::removeOpenState(ExecutionState *es){
 }
 
 void LoopHandler::addClosedState(ExecutionState *es,
-                                 llvm::Instruction *mp) {
+                                 Instruction *mp) {
   ++closedStateCount;
   removeOpenState(es);
 

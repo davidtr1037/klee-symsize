@@ -934,7 +934,9 @@ void SpecialFunctionHandler::handleOpenLoopMerge(ExecutionState &state,
   }
 
   state.openLoopHandlerStack.push_back(ref<LoopHandler>(new LoopHandler(&executor, &state)));
-  llvm::errs() << "open merge: " << &state << "\n";
+  if (DebugLoopHandler) {
+    llvm::errs() << "open merge: " << &state << "\n";
+  }
 }
 
 void SpecialFunctionHandler::handleCloseLoopMerge(ExecutionState &state,
@@ -946,7 +948,9 @@ void SpecialFunctionHandler::handleCloseLoopMerge(ExecutionState &state,
   }
 
   Instruction *i = target->inst;
-  llvm::errs() << "close merge: " << &state << " at [" << *i << "]\n";
+  if (DebugLoopHandler) {
+    llvm::errs() << "close merge: " << &state << " at [" << *i << "]\n";
+  }
 
   if (state.openLoopHandlerStack.empty()) {
     assert(0);

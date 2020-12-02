@@ -16,6 +16,7 @@ class Instruction;
 namespace klee {
 
 extern llvm::cl::opt<bool> UseLoopMerge;
+extern llvm::cl::opt<bool> DebugLoopHandler;
 
 class Executor;
 class ExecutionState;
