@@ -1779,6 +1779,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   } else if (ki->isLoopExit) {
     state.stack.back().isExecutingLoop = false;
     if (UseLoopMerge && !state.loopHandler.isNull()) {
+      /* TODO: match against the entry point */
       assert(mergingSearcher->inCloseMerge.find(&state) == mergingSearcher->inCloseMerge.end());
       mergingSearcher->inCloseMerge.insert(&state);
       state.loopHandler->addClosedState(&state, ki->inst);
