@@ -160,8 +160,8 @@ void ConstraintManager::addConstraint(const ref<Expr> &e) {
   addConstraintInternal(simplified);
 }
 
-void ConstraintSet::dump() const {
-    for (ref<Expe> e : constraints) {
+void ConstraintManager::dump() const {
+    for (ref<Expr> e : constraints) {
         e->dump();
     }
 }
