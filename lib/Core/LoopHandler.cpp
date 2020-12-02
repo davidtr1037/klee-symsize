@@ -75,8 +75,9 @@ ExecutionState *LoopHandler::mergeStates(vector<ExecutionState *> &states) {
     return merged;
 }
 
-LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es)
-    : executor(_executor), closedStateCount(0) {
+LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
+    : executor(_executor), closedStateCount(0), loop(loop) {
+  assert(loop);
   addOpenState(es);
 }
 

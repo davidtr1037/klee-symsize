@@ -1119,7 +1119,9 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     if (UseLoopMerge) {
       if (current.stack.back().isExecutingLoop && current.isTaintedExpr(condition)) {
         if (current.loopHandler.isNull()) {
-          current.loopHandler = ref<LoopHandler>(new LoopHandler(this, &current));
+          current.loopHandler = new LoopHandler(this,
+                                                &current,
+                                                current.stack.back().loop);
         }
       }
     }
@@ -1776,6 +1778,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   /* TODO: won't work with nested loops */
   if (ki->isLoopEntry) {
     state.stack.back().isExecutingLoop = true;
+    state.stack.back().loop = ki->loop;
   } else if (ki->isLoopExit) {
     state.stack.back().isExecutingLoop = false;
     if (UseLoopMerge && !state.loopHandler.isNull()) {

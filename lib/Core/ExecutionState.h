@@ -22,6 +22,8 @@
 #include "klee/Solver/Solver.h"
 #include "klee/System/Time.h"
 
+#include <llvm/Analysis/LoopInfo.h>
+
 #include <map>
 #include <set>
 #include <vector>
@@ -62,6 +64,8 @@ struct StackFrame {
 
   /* TODO: add docs */
   bool isExecutingLoop;
+  /* TODO: add docs */
+  llvm::Loop *loop;
 
   StackFrame(KInstIterator caller, KFunction *kf);
   StackFrame(const StackFrame &s);

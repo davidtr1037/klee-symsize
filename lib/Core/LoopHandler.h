@@ -4,6 +4,7 @@
 #include "klee/ADT/Ref.h"
 
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include <map>
 #include <stdint.h>
@@ -33,11 +34,13 @@ private:
 
   std::map<llvm::Instruction *, std::vector<ExecutionState *>> reachedCloseMerge;
 
+  llvm::Loop *loop;
+
 public:
 
   class ReferenceCounter _refCount;
 
-  LoopHandler(Executor *_executor, ExecutionState *es);
+  LoopHandler(Executor *_executor, ExecutionState *es, llvm::Loop *loop);
 
   ~LoopHandler();
 

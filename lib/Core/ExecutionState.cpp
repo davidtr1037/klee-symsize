@@ -48,7 +48,7 @@ std::uint32_t ExecutionState::nextID = 1;
 
 StackFrame::StackFrame(KInstIterator _caller, KFunction *_kf)
   : caller(_caller), kf(_kf), callPathNode(0), 
-    minDistToUncoveredOnReturn(0), varargs(0), isExecutingLoop(false) {
+    minDistToUncoveredOnReturn(0), varargs(0), isExecutingLoop(false), loop(nullptr) {
   locals = new Cell[kf->numRegisters];
 }
 
@@ -59,7 +59,8 @@ StackFrame::StackFrame(const StackFrame &s)
     allocas(s.allocas),
     minDistToUncoveredOnReturn(s.minDistToUncoveredOnReturn),
     varargs(s.varargs),
-    isExecutingLoop(false) {
+    isExecutingLoop(false),
+    loop(nullptr) {
   locals = new Cell[s.kf->numRegisters];
   for (unsigned i=0; i<s.kf->numRegisters; i++)
     locals[i] = s.locals[i];
