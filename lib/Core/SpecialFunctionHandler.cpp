@@ -925,6 +925,7 @@ void SpecialFunctionHandler::handleDivRemOverflow(ExecutionState &state,
                                  Executor::Overflow);
 }
 
+/* TODO: remove? */
 void SpecialFunctionHandler::handleOpenLoopMerge(ExecutionState &state,
                                                  KInstruction *target,
                                                  std::vector<ref<Expr>> &arguments) {
@@ -939,6 +940,7 @@ void SpecialFunctionHandler::handleOpenLoopMerge(ExecutionState &state,
   }
 }
 
+/* TODO: remove? */
 void SpecialFunctionHandler::handleCloseLoopMerge(ExecutionState &state,
                                                   KInstruction *target,
                                                   std::vector<ref<Expr> > &arguments) {

@@ -79,7 +79,8 @@ ExecutionState::ExecutionState(KFunction *kf) :
     steppedInstructions(0),
     instsSinceCovNew(0),
     coveredNew(false),
-    forkDisabled(false) {
+    forkDisabled(false),
+    loopHandler(nullptr) {
   pushFrame(nullptr, kf);
   setID();
 }
@@ -90,6 +91,10 @@ ExecutionState::~ExecutionState() {
   }
   for (ref<LoopHandler> handler : openLoopHandlerStack){
     handler->removeOpenState(this);
+  }
+  if (!loopHandler.isNull()) {
+    /* TODO: mark here as incomplete execution? */
+    loopHandler->removeOpenState(this);
   }
 
   while (!stack.empty()) popFrame();
@@ -115,12 +120,16 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     coveredNew(state.coveredNew),
     forkDisabled(state.forkDisabled),
     /* TODO: copy-on-write? */
-    taintedExprs(state.taintedExprs) {
+    taintedExprs(state.taintedExprs),
+    loopHandler(state.loopHandler) {
   for (const auto &cur_mergehandler: openMergeStack) {
     cur_mergehandler->addOpenState(this);
   }
   for (ref<LoopHandler> handler : openLoopHandlerStack) {
     handler->addOpenState(this);
+  }
+  if (!loopHandler.isNull()) {
+    loopHandler->addOpenState(this);
   }
 }
 

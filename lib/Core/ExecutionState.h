@@ -165,6 +165,8 @@ public:
 
   std::map<std::string, ExprSet> taintedExprs;
 
+  ref<LoopHandler> loopHandler;
+
 public:
   #ifdef KLEE_UNITTEST
   // provide this function only in the context of unittests

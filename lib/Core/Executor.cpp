@@ -1116,6 +1116,14 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       }
     }
 
+    if (UseLoopMerge) {
+      if (current.stack.back().isExecutingLoop && current.isTaintedExpr(condition)) {
+        if (current.loopHandler.isNull()) {
+          current.loopHandler = ref<LoopHandler>(new LoopHandler(this, &current));
+        }
+      }
+    }
+
     TimerStatIncrementer timer(stats::forkTime);
     ExecutionState *falseState, *trueState = &current;
 
@@ -1770,6 +1778,12 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     state.stack.back().isExecutingLoop = true;
   } else if (ki->isLoopExit) {
     state.stack.back().isExecutingLoop = false;
+    if (UseLoopMerge && !state.loopHandler.isNull()) {
+      assert(mergingSearcher->inCloseMerge.find(&state) == mergingSearcher->inCloseMerge.end());
+      mergingSearcher->inCloseMerge.insert(&state);
+      state.loopHandler->addClosedState(&state, ki->inst);
+      state.loopHandler = nullptr;
+    }
   }
 
   Instruction *i = ki->inst;
