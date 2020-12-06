@@ -63,16 +63,16 @@ void LoopHandler::releaseStates() {
 }
 
 ExecutionState *LoopHandler::mergeStates(vector<ExecutionState *> &states) {
-    assert(!states.empty());
-    ExecutionState *merged = states[0];
+  assert(!states.empty());
+  ExecutionState *merged = states[0];
 
-    for (unsigned i = 1; i < states.size(); i++) {
-        ExecutionState *es = states[i];
-        merged->merge(*es);
-        executor->terminateState(*es);
-    }
+  for (unsigned i = 1; i < states.size(); i++) {
+    ExecutionState *es = states[i];
+    merged->merge(*es);
+    executor->terminateState(*es);
+  }
 
-    return merged;
+  return merged;
 }
 
 LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)

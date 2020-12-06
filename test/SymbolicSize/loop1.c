@@ -1,3 +1,6 @@
+// RUN: %clang %s -emit-llvm %O0opt -c -o %t.bc
+// RUN: rm -rf %t.klee-out
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
