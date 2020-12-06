@@ -34,8 +34,6 @@ private:
 
   std::map<llvm::Instruction *, std::vector<ExecutionState *>> reachedCloseMerge;
 
-  llvm::Loop *loop;
-
 public:
 
   class ReferenceCounter _refCount;
@@ -53,6 +51,8 @@ public:
   void releaseStates();
 
   ExecutionState *mergeStates(std::vector<ExecutionState *> &states);
+
+  llvm::Loop *loop;
 };
 
 }

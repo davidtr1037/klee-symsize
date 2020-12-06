@@ -393,8 +393,9 @@ void KModule::visitLoop(Function &f, Loop *loop) {
   for (BasicBlock *bb : blocks) {
     /* TODO: mark all basic block? */
     Instruction *term = bb->getTerminator();
-    KInstruction *ki = instructionMap[term];
-    ki->isLoopExit = true;
+    KInstruction *kterm = instructionMap[term];
+    kterm->loop = loop;
+    kterm->isLoopExit = true;
   }
 }
 
