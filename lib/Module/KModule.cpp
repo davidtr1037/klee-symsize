@@ -381,6 +381,7 @@ void KModule::collectLoopInfo() {
 }
 
 /* TODO: is it the correct solution? */
+/* TODO: add 'isSupported' attribute? */
 void KModule::visitLoop(Function &f, Loop *loop) {
   /* TODO: mark all basic block? */
   Instruction *term = loop->getHeader()->getTerminator();
