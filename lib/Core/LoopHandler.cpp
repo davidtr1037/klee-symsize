@@ -69,6 +69,8 @@ ExecutionState *LoopHandler::mergeStates(vector<ExecutionState *> &states) {
   for (unsigned i = 1; i < states.size(); i++) {
     ExecutionState *es = states[i];
     merged->merge(*es);
+    /* TODO: a hacky way to remove from the pause list... */
+    executor->mergingSearcher->continueState(*es);
     executor->terminateState(*es);
   }
 
