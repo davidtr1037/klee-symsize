@@ -386,7 +386,7 @@ void KModule::visitLoop(Function &f, Loop *loop) {
   /* TODO: mark all basic block? */
   Instruction *term = loop->getHeader()->getTerminator();
   KInstruction *ki = instructionMap[term];
-  ki->loop = loop;
+  ki->entryLoop = loop;
   ki->isLoopEntry = true;
 
   SmallVector<BasicBlock *, 10> blocks;
@@ -395,7 +395,7 @@ void KModule::visitLoop(Function &f, Loop *loop) {
     /* TODO: mark all basic block? */
     Instruction *term = bb->getTerminator();
     KInstruction *kterm = instructionMap[term];
-    kterm->loop = loop;
+    kterm->exitLoops.push_back(loop);
     kterm->isLoopExit = true;
   }
 }

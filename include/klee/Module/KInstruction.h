@@ -43,7 +43,9 @@ namespace klee {
     /// Destination register index.
     unsigned dest;
     /* TODO: add docs */
-    llvm::Loop *loop;
+    llvm::Loop *entryLoop;
+    /* TODO: add docs */
+    std::vector<llvm::Loop *> exitLoops;
     /* TODO: add docs */
     bool isLoopEntry;
     /* TODO: add docs */
@@ -53,6 +55,10 @@ namespace klee {
     KInstruction();
     virtual ~KInstruction();
     std::string getSourceLocation() const;
+
+    bool hasExitLoop(llvm::Loop *loop) {
+      return std::find(exitLoops.begin(), exitLoops.end(), loop) != exitLoops.end();
+    }
 
   };
 

@@ -1778,12 +1778,12 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   /* TODO: won't work with nested loops */
   if (ki->isLoopEntry) {
     state.stack.back().isExecutingLoop = true;
-    state.stack.back().loop = ki->loop;
+    state.stack.back().loop = ki->entryLoop;
   } else if (ki->isLoopExit) {
     state.stack.back().isExecutingLoop = false;
     if (UseLoopMerge && !state.loopHandler.isNull()) {
       /* TODO: match against the entry point */
-      assert(ki->loop == state.loopHandler->loop);
+      assert(ki->hasExitLoop(state.loopHandler->loop));
       assert(mergingSearcher->inCloseMerge.find(&state) == mergingSearcher->inCloseMerge.end());
       mergingSearcher->inCloseMerge.insert(&state);
       state.loopHandler->addClosedState(&state, ki->inst);
