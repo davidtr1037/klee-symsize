@@ -465,6 +465,10 @@ private:
   void collectLoopStats(ExecutionState &state);
   void dumpLoopStats();
 
+  void onLoopEntry(ExecutionState &state, KInstruction *ki);
+
+  void onLoopExit(ExecutionState &state, KInstruction *ki);
+
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,
       InterpreterHandler *ie);

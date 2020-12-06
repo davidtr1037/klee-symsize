@@ -1777,18 +1777,9 @@ Function* Executor::getTargetFunction(Value *calledVal, ExecutionState &state) {
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   /* TODO: won't work with nested loops */
   if (ki->isLoopEntry) {
-    state.stack.back().isExecutingLoop = true;
-    state.stack.back().loop = ki->entryLoop;
+    onLoopEntry(state, ki);
   } else if (ki->isLoopExit) {
-    state.stack.back().isExecutingLoop = false;
-    if (UseLoopMerge && !state.loopHandler.isNull()) {
-      /* TODO: match against the entry point */
-      assert(ki->hasExitLoop(state.loopHandler->loop));
-      assert(mergingSearcher->inCloseMerge.find(&state) == mergingSearcher->inCloseMerge.end());
-      mergingSearcher->inCloseMerge.insert(&state);
-      state.loopHandler->addClosedState(&state, ki->inst);
-      state.loopHandler = nullptr;
-    }
+    onLoopExit(state, ki);
   }
 
   Instruction *i = ki->inst;
@@ -4413,6 +4404,26 @@ void Executor::dumpLoopStats() {
     }
     klee_message("---");
   }
+}
+
+void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
+ /* TODO: avoid nested loops? */
+ state.stack.back().isExecutingLoop = true;
+ state.stack.back().loop = ki->entryLoop;
+}
+
+void Executor::onLoopExit(ExecutionState &state, KInstruction *ki) {
+  state.stack.back().isExecutingLoop = false;
+  if (!UseLoopMerge || state.loopHandler.isNull()) {
+    return;
+  }
+
+  /* match against the entry point */
+  assert(ki->hasExitLoop(state.loopHandler->loop));
+  assert(mergingSearcher->inCloseMerge.find(&state) == mergingSearcher->inCloseMerge.end());
+  mergingSearcher->inCloseMerge.insert(&state);
+  state.loopHandler->addClosedState(&state, ki->inst);
+  state.loopHandler = nullptr;
 }
 
 ///
