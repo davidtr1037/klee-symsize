@@ -2,7 +2,7 @@
 // RUN: rm -rf %t.klee-out
 // RUN: %klee --output-dir=%t.klee-out --use-loop-merge -allocate-sym-size -capacity=200 --search=dfs %t.bc 2>&1 | FileCheck %s
 
-// CHECK: KLEE: merged 3 states (early = 0)
+// CHECK: KLEE: merged 11 states (early = 0)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +12,7 @@
 
 #include <klee/klee.h>
 
-#define MAX_SIZE (2)
+#define MAX_SIZE (10)
 
 int main(int argc, char *argv[]) {
     size_t n;
