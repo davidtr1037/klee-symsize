@@ -478,6 +478,136 @@ ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &state
   return merged;
 }
 
-ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState *> &states) {
-  return nullptr;
+ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState *> &states,
+                                                     bool isComplete) {
+  assert(!states.empty());
+  ExecutionState *merged = states[0];
+
+  /* program counter */
+  for (ExecutionState *es : states) {
+    if (es->pc != merged->pc) {
+      return nullptr;
+    }
+  }
+
+  /* symbolics */
+  for (ExecutionState *es : states) {
+    if (es->symbolics != merged->symbolics) {
+      return nullptr;
+    }
+  }
+
+  /* stack */
+  for (ExecutionState *es : states) {
+    auto i = merged->stack.begin();
+    auto j = es->stack.begin();
+    while (i != merged->stack.end() && j != es->stack.end()) {
+      if (i->caller != j->caller || i->kf != j->kf) {
+        return nullptr;
+      }
+      ++i;
+      ++j;
+    }
+    if (i != merged->stack.end() || j != es->stack.end()) {
+      return nullptr;
+    }
+  }
+
+  /* address space */
+  std::set<const MemoryObject*> mutated;
+  for (ExecutionState *es : states) {
+    auto ai = merged->addressSpace.objects.begin();
+    auto bi = es->addressSpace.objects.begin();
+    auto ae = merged->addressSpace.objects.end();
+    auto be = es->addressSpace.objects.end();
+    for (; ai != ae && bi != be; ++ai, ++bi) {
+      if (ai->first != bi->first) {
+        return nullptr;
+      }
+      if (ai->second.get() != bi->second.get()) {
+        mutated.insert(ai->first);
+      }
+    }
+    if (ai != ae || bi != be) {
+      return nullptr;
+    }
+  }
+
+  /* compute suffix for each state */
+  std::vector<ref<Expr>> suffixes;
+  for (unsigned i = 0; i < states.size(); i++) {
+    ExecutionState *es = states[i];
+    ref<Expr> all = ConstantExpr::create(1, Expr::Bool);
+    for (ref<Expr> e : es->suffixConstraints) {
+      all = AndExpr::create(all, e);
+    }
+    suffixes.push_back(all);
+  }
+
+  /* local vars */
+  for (unsigned i = 0; i < merged->stack.size(); i++) {
+    StackFrame &sf = merged->stack[i];
+    for (unsigned reg = 0; reg < sf.kf->numRegisters; reg++) {
+      bool ignore = false;
+      for (ExecutionState *es : states) {
+        ref<Expr> v = es->stack[i].locals[reg].value;
+        if (v.isNull()) {
+           ignore = true;
+           break;
+        }
+      }
+      if (ignore) {
+        continue;
+      }
+
+      std::vector<ref<Expr>> values;
+      for (ExecutionState *es : states) {
+        values.push_back(es->stack[i].locals[reg].value);
+      }
+      ref<Expr> &v = sf.locals[reg].value;
+      v = mergeValues(suffixes, values);
+    }
+  }
+
+  /* heap */
+  for (auto it = mutated.begin(), ie = mutated.end(); it != ie; ++it) {
+    const MemoryObject *mo = *it;
+    const ObjectState *os = merged->addressSpace.findObject(mo);
+    assert(os && !os->readOnly && "objects mutated but not writable in merging state");
+    ObjectState *wos = merged->addressSpace.getWriteable(mo, os);
+
+    for (unsigned i = 0; i < mo->capacity; i++) {
+      std::vector<ref<Expr>> values;
+      for (ExecutionState *es : states) {
+        const ObjectState *other = es->addressSpace.findObject(mo);
+        assert(other);
+        assert(wos->getObject()->capacity == other->getObject()->capacity);
+        values.push_back(other->read8(i));
+      }
+      ref<Expr> v = mergeValues(suffixes, values);
+      wos->write(i, v);
+    }
+  }
+
+  /* path constraints */
+  if (!isComplete) {
+    /* TODO: add disjunction to the PC */
+    assert(0);
+  }
+
+  return merged;
+}
+
+ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
+                                      std::vector<ref<Expr>> &values) {
+  assert(suffixes.size() == values.size());
+
+  ref<Expr> summary = values[0];
+  for (unsigned j = 1; j < values.size(); j++) {
+    ref<Expr> e = values[j];
+    ref<Expr> cond = suffixes[j - 1];
+    summary = SelectExpr::create(cond, summary, e);
+  }
+
+  return summary;
 }

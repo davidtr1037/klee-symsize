@@ -212,7 +212,10 @@ public:
 
   static ExecutionState *mergeStates(std::vector<ExecutionState *> &states);
 
-  static ExecutionState *mergeStatesOptimized(std::vector<ExecutionState *> &states);
+  static ExecutionState *mergeStatesOptimized(std::vector<ExecutionState *> &states, bool isComplete);
+
+  static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
+                               std::vector<ref<Expr>> &values);
 };
 
 struct ExecutionStateIDCompare {
