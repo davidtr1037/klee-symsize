@@ -461,11 +461,6 @@ void ExecutionContext::dump() const {
 
 ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &states) {
   assert(!states.empty());
-  for (ExecutionState *es : states) {
-    errs() << "###\n";
-    es->suffixConstraints.dump();
-  }
-
   ExecutionState *merged = states[0];
 
   for (unsigned i = 1; i < states.size(); i++) {
