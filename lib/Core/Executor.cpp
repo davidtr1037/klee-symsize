@@ -1119,9 +1119,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     if (UseLoopMerge) {
       if (current.stack.back().isExecutingLoop && current.isTaintedExpr(condition)) {
         if (current.loopHandler.isNull()) {
-          current.loopHandler = new LoopHandler(this,
-                                                &current,
-                                                current.stack.back().loop);
+          setLoopHandler(current);
         }
       }
     }
@@ -3214,7 +3212,7 @@ void Executor::terminateState(ExecutionState &state) {
   }
 
   if (!state.loopHandler.isNull()) {
-    state.loopHandler->earlyTerminated++;
+    state.loopHandler->markEarlyTerminated(state);
   }
 
   interpreterHandler->incPathsExplored();
@@ -4434,6 +4432,12 @@ void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused)
   state.loopHandler->addClosedState(&state, ki->inst);
   state.loopHandler = nullptr;
   paused = true;
+}
+
+void Executor::setLoopHandler(ExecutionState &state) {
+  state.loopHandler = new LoopHandler(this,
+                                      &state,
+                                      state.stack.back().loop);
 }
 
 ///

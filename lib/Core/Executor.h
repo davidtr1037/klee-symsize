@@ -469,6 +469,8 @@ private:
 
   void onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused);
 
+  void setLoopHandler(ExecutionState &state);
+
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,
       InterpreterHandler *ie);

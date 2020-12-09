@@ -34,9 +34,11 @@ private:
 
   std::map<llvm::Instruction *, std::vector<ExecutionState *>> reachedCloseMerge;
 
-public:
+  unsigned activeStates;
 
-  class ReferenceCounter _refCount;
+  unsigned earlyTerminated;
+
+public:
 
   LoopHandler(Executor *_executor, ExecutionState *es, llvm::Loop *loop);
 
@@ -52,9 +54,13 @@ public:
 
   ExecutionState *mergeStates(std::vector<ExecutionState *> &states);
 
-  llvm::Loop *loop;
+  void markEarlyTerminated(ExecutionState &state);
 
-  unsigned earlyTerminated;
+  unsigned getEarlyTerminated();
+
+  class ReferenceCounter _refCount;
+
+  llvm::Loop *loop;
 };
 
 }

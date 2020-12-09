@@ -25,6 +25,7 @@ cl::opt<bool> DebugLoopHandler(
 
 void LoopHandler::addOpenState(ExecutionState *es){
   openStates.push_back(es);
+  activeStates++;
 }
 
 void LoopHandler::removeOpenState(ExecutionState *es){
@@ -46,7 +47,15 @@ void LoopHandler::addClosedState(ExecutionState *es,
     auto &cpv = closePoint->second;
     cpv.push_back(es);
   }
+
   executor->mergingSearcher->pauseState(*es);
+
+  /* otherwise, a state sneaked out somehow */
+  assert(activeStates > 0);
+  activeStates--;
+  if (activeStates == 0) {
+    releaseStates();
+  }
 }
 
 void LoopHandler::releaseStates() {
@@ -54,9 +63,17 @@ void LoopHandler::releaseStates() {
     vector<ExecutionState *> &states = i.second;
     ExecutionState *merged = mergeStates(states);
     executor->mergingSearcher->continueState(*merged);
+    klee_message("merged %lu states (early = %u)", states.size(), earlyTerminated);
+    //merged->constraints.dump();
 
     for (ExecutionState *es : states) {
       executor->mergingSearcher->inCloseMerge.erase(es);
+    }
+
+    for (unsigned i = 1; i < states.size(); i++) {
+      ExecutionState *es = states[i];
+      executor->mergingSearcher->continueState(*es);
+      executor->terminateState(*es);
     }
   }
   reachedCloseMerge.clear();
@@ -74,14 +91,27 @@ ExecutionState *LoopHandler::mergeStates(vector<ExecutionState *> &states) {
   return merged;
 }
 
+void LoopHandler::markEarlyTerminated(ExecutionState &state) {
+  earlyTerminated++;
+  assert(activeStates > 0);
+  activeStates--;
+  if (activeStates == 0) {
+    releaseStates();
+  }
+}
+
+unsigned LoopHandler::getEarlyTerminated() {
+  return earlyTerminated;
+}
+
 LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
-    : executor(_executor), closedStateCount(0), loop(loop), earlyTerminated(0) {
+    : executor(_executor), closedStateCount(0), activeStates(0), earlyTerminated(0), loop(loop) {
   assert(loop);
   addOpenState(es);
 }
 
 LoopHandler::~LoopHandler() {
-  releaseStates();
+
 }
 
 }
