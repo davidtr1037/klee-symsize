@@ -470,7 +470,9 @@ ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &state
 
   for (unsigned i = 1; i < states.size(); i++) {
     ExecutionState *es = states[i];
-    merged->merge(*es);
+    if (!merged->merge(*es)) {
+      return nullptr;
+    }
   }
 
   return merged;
