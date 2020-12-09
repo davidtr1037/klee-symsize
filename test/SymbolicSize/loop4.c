@@ -9,7 +9,7 @@
 
 #include <klee/klee.h>
 
-#define MAX_SIZE (1)
+#define MAX_SIZE (10)
 
 int f(unsigned char *p, size_t n) {
     int z = 0;

@@ -1,5 +1,8 @@
 // RUN: %clang %s -emit-llvm %O0opt -c -o %t.bc
 // RUN: rm -rf %t.klee-out
+// RUN: %klee --output-dir=%t.klee-out --use-loop-merge -allocate-sym-size -capacity=200 --search=dfs %t.bc 2>&1 | FileCheck %s
+
+// CHECK: KLEE: merged 11 states (early = 0)
 
 #include <stdio.h>
 #include <stdlib.h>
