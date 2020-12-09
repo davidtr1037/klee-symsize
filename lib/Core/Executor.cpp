@@ -1779,7 +1779,12 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   if (ki->isLoopEntry) {
     onLoopEntry(state, ki);
   } else if (ki->isLoopExit) {
-    onLoopExit(state, ki);
+    bool paused = false;
+    onLoopExit(state, ki, paused);
+    if (paused) {
+      state.pc = state.prevPC;
+      return;
+    }
   }
 
   Instruction *i = ki->inst;
@@ -4416,7 +4421,7 @@ void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
   state.stack.back().loop = ki->entryLoop;
 }
 
-void Executor::onLoopExit(ExecutionState &state, KInstruction *ki) {
+void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused) {
   state.stack.back().isExecutingLoop = false;
   if (!UseLoopMerge || state.loopHandler.isNull()) {
     return;
@@ -4428,6 +4433,7 @@ void Executor::onLoopExit(ExecutionState &state, KInstruction *ki) {
   mergingSearcher->inCloseMerge.insert(&state);
   state.loopHandler->addClosedState(&state, ki->inst);
   state.loopHandler = nullptr;
+  paused = true;
 }
 
 ///
