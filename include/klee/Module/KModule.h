@@ -15,6 +15,7 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include <map>
 #include <memory>
@@ -108,12 +109,17 @@ namespace klee {
     /* TODO: add docs */
     std::map<llvm::Instruction*, KInstruction*> instructionMap;
 
+    /* TODO: add docs */
+    std::vector<llvm::LoopInfo *> loopInfos;
+
   private:
     // Mark function with functionName as part of the KLEE runtime
     void addInternalFunction(const char* functionName);
 
   public:
     KModule() = default;
+
+    ~KModule();
 
     /// Optimise and prepare module such that KLEE can execute it
     //

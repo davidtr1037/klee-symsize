@@ -367,13 +367,14 @@ void KModule::manifest(InterpreterHandler *ih, bool forceSourceOutput) {
 
 void KModule::collectLoopInfo() {
   for (Function &f : *module) {
-    llvm::DominatorTree* dom = new llvm::DominatorTree();
     if (f.isDeclaration()) {
       continue;
     }
 
-    dom->recalculate(f);
-    llvm::LoopInfo* li = new llvm::LoopInfo(*dom);
+    llvm::DominatorTree dom;
+    dom.recalculate(f);
+    llvm::LoopInfo* li = new llvm::LoopInfo(dom);
+    loopInfos.push_back(li);
     for (Loop *loop : *li) {
       visitLoop(f, loop);
     }
@@ -434,6 +435,12 @@ unsigned KModule::getConstantID(Constant *c, KInstruction* ki) {
   constantMap.insert(std::make_pair(c, std::move(kc)));
   constants.push_back(c);
   return id;
+}
+
+KModule::~KModule() {
+  for (llvm::LoopInfo *li : loopInfos) {
+    delete li;
+  }
 }
 
 /***/
