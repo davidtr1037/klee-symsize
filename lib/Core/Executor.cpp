@@ -3208,6 +3208,10 @@ void Executor::terminateState(ExecutionState &state) {
                       "replay did not consume all objects in test input.");
   }
 
+  if (!state.loopHandler.isNull()) {
+    state.loopHandler->earlyTerminated++;
+  }
+
   interpreterHandler->incPathsExplored();
 
   std::vector<ExecutionState *>::iterator it =
@@ -4407,9 +4411,9 @@ void Executor::dumpLoopStats() {
 }
 
 void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
- /* TODO: avoid nested loops? */
- state.stack.back().isExecutingLoop = true;
- state.stack.back().loop = ki->entryLoop;
+  /* TODO: avoid nested loops? */
+  state.stack.back().isExecutingLoop = true;
+  state.stack.back().loop = ki->entryLoop;
 }
 
 void Executor::onLoopExit(ExecutionState &state, KInstruction *ki) {

@@ -53,6 +53,8 @@ public:
   ExecutionState *mergeStates(std::vector<ExecutionState *> &states);
 
   llvm::Loop *loop;
+
+  unsigned earlyTerminated;
 };
 
 }
