@@ -52,8 +52,6 @@ public:
 
   void releaseStates();
 
-  ExecutionState *mergeStates(std::vector<ExecutionState *> &states);
-
   void markEarlyTerminated(ExecutionState &state);
 
   unsigned getEarlyTerminated();

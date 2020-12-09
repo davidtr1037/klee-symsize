@@ -171,6 +171,8 @@ public:
 
   ref<LoopHandler> loopHandler;
 
+  ConstraintSet suffixConstraints;
+
 public:
   #ifdef KLEE_UNITTEST
   // provide this function only in the context of unittests
@@ -207,6 +209,10 @@ public:
   bool hasTaintedExpr(std::string name, ref<Expr> offset);
 
   bool isTaintedExpr(ref<Expr> e);
+
+  static ExecutionState *mergeStates(std::vector<ExecutionState *> &states);
+
+  static ExecutionState *mergeStatesOptimized(std::vector<ExecutionState *> &states);
 };
 
 struct ExecutionStateIDCompare {

@@ -61,10 +61,9 @@ void LoopHandler::addClosedState(ExecutionState *es,
 void LoopHandler::releaseStates() {
   for (auto& i: reachedCloseMerge) {
     vector<ExecutionState *> &states = i.second;
-    ExecutionState *merged = mergeStates(states);
+    ExecutionState *merged = ExecutionState::mergeStates(states);
     executor->mergingSearcher->continueState(*merged);
     klee_message("merged %lu states (early = %u)", states.size(), earlyTerminated);
-    //merged->constraints.dump();
 
     for (ExecutionState *es : states) {
       executor->mergingSearcher->inCloseMerge.erase(es);
@@ -77,18 +76,6 @@ void LoopHandler::releaseStates() {
     }
   }
   reachedCloseMerge.clear();
-}
-
-ExecutionState *LoopHandler::mergeStates(vector<ExecutionState *> &states) {
-  assert(!states.empty());
-  ExecutionState *merged = states[0];
-
-  for (unsigned i = 1; i < states.size(); i++) {
-    ExecutionState *es = states[i];
-    merged->merge(*es);
-  }
-
-  return merged;
 }
 
 void LoopHandler::markEarlyTerminated(ExecutionState &state) {

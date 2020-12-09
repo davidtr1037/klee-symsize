@@ -122,7 +122,8 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     forkDisabled(state.forkDisabled),
     /* TODO: copy-on-write? */
     taintedExprs(state.taintedExprs),
-    loopHandler(state.loopHandler) {
+    loopHandler(state.loopHandler),
+    suffixConstraints(state.suffixConstraints) {
   for (const auto &cur_mergehandler: openMergeStack) {
     cur_mergehandler->addOpenState(this);
   }
@@ -380,6 +381,11 @@ void ExecutionState::dumpStack(llvm::raw_ostream &out) const {
 void ExecutionState::addConstraint(ref<Expr> e) {
   ConstraintManager c(constraints);
   c.addConstraint(e);
+  if (!loopHandler.isNull()) {
+    /* we don't expect forks after the state is paused */
+    assert(stack.back().isExecutingLoop);
+    suffixConstraints.push_back(e);
+  }
 }
 
 void ExecutionState::addTaintedExpr(std::string name, ref<Expr> offset) {
@@ -451,4 +457,25 @@ void ExecutionContext::dump() const {
   for (const CodeLocation &location : trace) {
     location.dump();
   }
+}
+
+ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &states) {
+  assert(!states.empty());
+  for (ExecutionState *es : states) {
+    errs() << "###\n";
+    es->suffixConstraints.dump();
+  }
+
+  ExecutionState *merged = states[0];
+
+  for (unsigned i = 1; i < states.size(); i++) {
+    ExecutionState *es = states[i];
+    merged->merge(*es);
+  }
+
+  return merged;
+}
+
+ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState *> &states) {
+  return nullptr;
 }
