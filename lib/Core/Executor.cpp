@@ -1780,7 +1780,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     bool paused = false;
     onLoopExit(state, ki, paused);
     if (paused) {
-      state.pc = state.prevPC;
       return;
     }
   }

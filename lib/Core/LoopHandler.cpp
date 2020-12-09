@@ -62,6 +62,12 @@ void LoopHandler::releaseStates() {
   for (auto& i: reachedCloseMerge) {
     vector<ExecutionState *> &states = i.second;
     ExecutionState *merged = ExecutionState::mergeStates(states);
+    if (!merged) {
+      /* TODO: handle */
+      assert(0);
+    }
+
+    merged->pc = merged->prevPC;
     executor->mergingSearcher->continueState(*merged);
     klee_message("merged %lu states (early = %u)", states.size(), earlyTerminated);
 
