@@ -308,6 +308,7 @@ private:
   unsigned m_numTotalTests;     // Number of tests received from the interpreter
   unsigned m_numGeneratedTests; // Number of tests successfully generated
   unsigned m_pathsExplored; // number of paths explored so far
+  unsigned m_unmergedExploredPaths;
 
   // used for writing .ktest files
   int m_argc;
@@ -321,7 +322,10 @@ public:
   /// Returns the number of test cases successfully generated so far
   unsigned getNumTestCases() { return m_numGeneratedTests; }
   unsigned getNumPathsExplored() { return m_pathsExplored; }
+  unsigned getNumUnmergedExploredPaths() { return m_unmergedExploredPaths; }
   void incPathsExplored() { m_pathsExplored++; }
+  void incUnmergedExploredPaths() { m_unmergedExploredPaths++; }
+  void decUnmergedExploredPaths() { m_unmergedExploredPaths--; }
 
   void setInterpreter(Interpreter *i);
 
@@ -347,7 +351,7 @@ public:
 KleeHandler::KleeHandler(int argc, char **argv)
     : m_interpreter(0), m_pathWriter(0), m_symPathWriter(0),
       m_outputDirectory(), m_numTotalTests(0), m_numGeneratedTests(0),
-      m_pathsExplored(0), m_argc(argc), m_argv(argv) {
+      m_pathsExplored(0), m_unmergedExploredPaths(0), m_argc(argc), m_argv(argv) {
 
   // create output directory (OutputDir or "klee-out-<i>")
   bool dir_given = OutputDir != "";
@@ -1547,6 +1551,8 @@ int main(int argc, char **argv, char **envp) {
         << instructions << "\n";
   stats << "KLEE: done: completed paths = "
         << handler->getNumPathsExplored() << "\n";
+  stats << "KLEE: done: unmerged completed paths = "
+        << handler->getNumUnmergedExploredPaths() << "\n";
   stats << "KLEE: done: generated tests = "
         << handler->getNumTestCases() << "\n";
 

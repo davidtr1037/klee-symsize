@@ -88,6 +88,7 @@ void LoopHandler::releaseStates() {
       ExecutionState *es = states[i];
       executor->mergingSearcher->continueState(*es);
       executor->terminateState(*es);
+      executor->interpreterHandler->decUnmergedExploredPaths();
     }
   }
   reachedCloseMerge.clear();

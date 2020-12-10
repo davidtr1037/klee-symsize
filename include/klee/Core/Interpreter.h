@@ -42,6 +42,10 @@ public:
 
   virtual void incPathsExplored() = 0;
 
+  virtual void incUnmergedExploredPaths() = 0;
+
+  virtual void decUnmergedExploredPaths() = 0;
+
   virtual void processTestCase(const ExecutionState &state,
                                const char *err,
                                const char *suffix) = 0;
