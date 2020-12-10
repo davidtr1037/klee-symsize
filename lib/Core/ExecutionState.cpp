@@ -586,8 +586,19 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
 
   /* path constraints */
   if (!isComplete) {
-    /* TODO: add disjunction to the PC */
-    assert(0);
+    ref<Expr> orExpr = ConstantExpr::create(0, Expr::Bool);
+    for (ExecutionState *es : states) {
+      /* build suffix conjunction */
+      ref<Expr> andExpr = ConstantExpr::create(1, Expr::Bool);
+      for (ref<Expr> e : es->suffixConstraints) {
+        andExpr = AndExpr::create(andExpr, e);
+      }
+
+      /* update disjunction */
+      orExpr = OrExpr::create(orExpr, andExpr);
+    }
+
+    merged->addConstraint(orExpr);
   }
 
   return merged;
