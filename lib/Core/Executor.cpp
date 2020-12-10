@@ -1773,17 +1773,6 @@ Function* Executor::getTargetFunction(Value *calledVal, ExecutionState &state) {
 }
 
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
-  /* TODO: won't work with nested loops */
-  if (ki->isLoopEntry) {
-    onLoopEntry(state, ki);
-  } else if (ki->isLoopExit) {
-    bool paused = false;
-    onLoopExit(state, ki, paused);
-    if (paused) {
-      return;
-    }
-  }
-
   Instruction *i = ki->inst;
   switch (i->getOpcode()) {
     // Control flow
@@ -3130,8 +3119,18 @@ void Executor::run(ExecutionState &initialState) {
   while (!states.empty() && !haltExecution) {
     ExecutionState &state = searcher->selectState();
     KInstruction *ki = state.pc;
-    stepInstruction(state);
+    /* TODO: move to a separate function? */
+    if (ki->isLoopEntry) {
+      onLoopEntry(state, ki);
+    } else if (ki->isLoopExit) {
+      bool paused = false;
+      onLoopExit(state, ki, paused);
+      if (paused) {
+        continue;
+      }
+    }
 
+    stepInstruction(state);
     executeInstruction(state, ki);
     timers.invoke();
     if (::dumpStates) dumpStates();

@@ -77,7 +77,6 @@ void LoopHandler::releaseStates() {
       assert(0);
     }
 
-    merged->pc = merged->prevPC;
     executor->mergingSearcher->continueState(*merged);
     klee_message("merged %lu states (early = %u)", states.size(), earlyTerminated);
 
