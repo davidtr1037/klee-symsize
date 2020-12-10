@@ -23,6 +23,11 @@ cl::opt<bool> DebugLoopHandler(
     cl::desc(""),
     cl::cat(klee::LoopCat));
 
+cl::opt<bool> UseOptimizedMerge(
+    "use-optimized-merge", cl::init(false),
+    cl::desc(""),
+    cl::cat(klee::LoopCat));
+
 void LoopHandler::addOpenState(ExecutionState *es){
   openStates.push_back(es);
   activeStates++;
@@ -61,7 +66,12 @@ void LoopHandler::addClosedState(ExecutionState *es,
 void LoopHandler::releaseStates() {
   for (auto& i: reachedCloseMerge) {
     vector<ExecutionState *> &states = i.second;
-    ExecutionState *merged = ExecutionState::mergeStates(states);
+    ExecutionState *merged;
+    if (UseOptimizedMerge) {
+      merged = ExecutionState::mergeStatesOptimized(states, earlyTerminated == 0);
+    } else {
+      merged = ExecutionState::mergeStates(states);
+    }
     if (!merged) {
       /* TODO: handle */
       assert(0);
