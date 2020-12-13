@@ -40,6 +40,10 @@ public:
     return constraints == b.constraints;
   }
 
+  void clear() {
+    constraints.clear();
+  }
+
   void dump() const;
 
 private:
