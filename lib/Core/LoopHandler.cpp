@@ -82,6 +82,7 @@ void LoopHandler::releaseStates() {
 
     for (ExecutionState *es : states) {
       executor->mergingSearcher->inCloseMerge.erase(es);
+      es->suffixConstraints.clear();
     }
 
     for (unsigned i = 1; i < states.size(); i++) {
