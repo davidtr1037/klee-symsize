@@ -475,7 +475,8 @@ ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &state
 }
 
 ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState *> &states,
-                                                     bool isComplete) {
+                                                     bool isComplete,
+                                                     LoopHandler *loopHandler) {
   assert(!states.empty());
   ExecutionState *merged = states[0];
 
@@ -586,6 +587,13 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   }
 
   /* path constraints */
+  merged->constraints = ConstraintSet();
+  ConstraintManager m(merged->constraints);
+  for (ref<Expr> e : loopHandler->initialConstraints) {
+    /* add without the manager? (the prefix is already optimized) */
+    m.addConstraint(e);
+  }
+
   if (!isComplete) {
     ref<Expr> orExpr = ConstantExpr::create(0, Expr::Bool);
     for (ExecutionState *es : states) {
@@ -599,7 +607,8 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
       orExpr = OrExpr::create(orExpr, andExpr);
     }
 
-    merged->addConstraint(orExpr);
+    /* TODO: used ExecutionState's addConstraint? */
+    m.addConstraint(orExpr);
   }
 
   return merged;

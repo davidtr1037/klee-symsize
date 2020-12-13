@@ -68,7 +68,7 @@ void LoopHandler::releaseStates() {
     vector<ExecutionState *> &states = i.second;
     ExecutionState *merged;
     if (UseOptimizedMerge) {
-      merged = ExecutionState::mergeStatesOptimized(states, earlyTerminated == 0);
+      merged = ExecutionState::mergeStatesOptimized(states, earlyTerminated == 0, this);
     } else {
       merged = ExecutionState::mergeStates(states);
     }
@@ -112,6 +112,9 @@ LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
     : executor(_executor), closedStateCount(0), activeStates(0), earlyTerminated(0), loop(loop) {
   assert(loop);
   addOpenState(es);
+  for (ref<Expr> e : es->constraints) {
+    initialConstraints.push_back(e);
+  }
 }
 
 LoopHandler::~LoopHandler() {

@@ -2,6 +2,7 @@
 #define KLEE_LOOPHANDLER_H
 
 #include "klee/ADT/Ref.h"
+#include "klee/Expr/Constraints.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -60,6 +61,8 @@ public:
   class ReferenceCounter _refCount;
 
   llvm::Loop *loop;
+
+  ConstraintSet initialConstraints;
 };
 
 }
