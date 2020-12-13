@@ -384,7 +384,8 @@ void ExecutionState::addConstraint(ref<Expr> e) {
   if (!loopHandler.isNull()) {
     /* we don't expect forks after the state is paused */
     assert(stack.back().isExecutingLoop);
-    suffixConstraints.push_back(e);
+    ConstraintManager m(suffixConstraints);
+    m.addConstraint(e);
   }
 }
 
