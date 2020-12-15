@@ -549,8 +549,8 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
       for (ExecutionState *es : states) {
         ref<Expr> v = es->stack[i].locals[reg].value;
         if (v.isNull()) {
-           ignore = true;
-           break;
+          ignore = true;
+          break;
         }
       }
       if (ignore) {
