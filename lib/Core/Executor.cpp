@@ -3126,6 +3126,8 @@ void Executor::run(ExecutionState &initialState) {
       bool paused = false;
       onLoopExit(state, ki, paused);
       if (paused) {
+        /* TODO: validate this workaround! */
+        updateStates(&state);
         continue;
       }
     }
