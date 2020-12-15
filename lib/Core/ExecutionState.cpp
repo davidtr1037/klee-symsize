@@ -627,3 +627,73 @@ ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
 
   return summary;
 }
+
+bool ExecutionState::areEquiv(TimingSolver *solver,
+                              const ExecutionState *sa,
+                              const ExecutionState *sb) {
+  ref<Expr> pcA = ConstantExpr::create(1, Expr::Bool);
+  for (ref<Expr> e : sa->constraints) {
+    pcA = AndExpr::create(pcA, e);
+  }
+
+  ref<Expr> pcB = ConstantExpr::create(1, Expr::Bool);
+  for (ref<Expr> e : sb->constraints) {
+    pcB = AndExpr::create(pcB, e);
+  }
+
+  ref<Expr> pcEquiv = AndExpr::create(
+    OrExpr::create(NotExpr::create(pcA), pcB),
+    OrExpr::create(NotExpr::create(pcB), pcA)
+  );
+  ConstraintSet empty;
+  bool isTrue = false;
+  SolverQueryMetaData meta;
+  assert(solver->mustBeTrue(empty, pcEquiv, isTrue, meta));
+  if (!isTrue) {
+    return false;
+  }
+
+  for (unsigned i = 0; i < sa->stack.size(); i++) {
+    const StackFrame &sf = sa->stack[i];
+    for (unsigned reg = 0; reg < sf.kf->numRegisters; reg++) {
+      ref<Expr> v1 = sa->stack[i].locals[reg].value;
+      ref<Expr> v2 = sb->stack[i].locals[reg].value;
+      if (v1.isNull() || v2.isNull()) {
+        assert(v1.isNull() && v2.isNull());
+        continue;
+      }
+
+      bool isEqual;
+      SolverQueryMetaData meta;
+      assert(solver->mustBeTrue(sa->constraints,
+                                          EqExpr::create(v1, v2),
+                                          isEqual,
+                                          meta));
+      if (!isEqual) {
+        return false;
+      }
+    }
+  }
+
+  for (auto i : sa->addressSpace.objects) {
+    const MemoryObject *mo = i.first;
+    ref<ObjectState> os = i.second;
+    const ObjectState *otherOS = sb->addressSpace.findObject(mo);
+    for (unsigned i = 0; i < mo->capacity; i++) {
+      ref<Expr> v1 = os->read8(i);
+      ref<Expr> v2 = otherOS->read8(i);
+
+      bool isEqual;
+      SolverQueryMetaData meta;
+      assert(solver->mustBeTrue(sa->constraints,
+                                          EqExpr::create(v1, v2),
+                                          isEqual,
+                                          meta));
+      if (!isEqual) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}

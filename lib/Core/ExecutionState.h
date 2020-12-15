@@ -218,6 +218,10 @@ public:
 
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
                                std::vector<ref<Expr>> &values);
+
+  static bool areEquiv(TimingSolver *solver,
+                       const ExecutionState *sa,
+                       const ExecutionState *sb);
 };
 
 struct ExecutionStateIDCompare {

@@ -28,6 +28,11 @@ cl::opt<bool> UseOptimizedMerge(
     cl::desc(""),
     cl::cat(klee::LoopCat));
 
+cl::opt<bool> ValidateMerge(
+    "validate-merge", cl::init(false),
+    cl::desc(""),
+    cl::cat(klee::LoopCat));
+
 void LoopHandler::addOpenState(ExecutionState *es){
   openStates.push_back(es);
   activeStates++;
@@ -66,6 +71,14 @@ void LoopHandler::addClosedState(ExecutionState *es,
 void LoopHandler::releaseStates() {
   for (auto& i: reachedCloseMerge) {
     vector<ExecutionState *> &states = i.second;
+    vector<ExecutionState *> snapshots;
+    if (ValidateMerge) {
+      /* take snapshots before merging */
+      for (ExecutionState *es : states) {
+        snapshots.push_back(es->branch());
+      }
+    }
+
     ExecutionState *merged;
     if (UseOptimizedMerge) {
       merged = ExecutionState::mergeStatesOptimized(states, earlyTerminated == 0, this);
@@ -75,6 +88,10 @@ void LoopHandler::releaseStates() {
     if (!merged) {
       /* TODO: handle */
       assert(0);
+    }
+
+    if (ValidateMerge) {
+      assert(validateMerge(snapshots, merged));
     }
 
     executor->mergingSearcher->continueState(*merged);
@@ -119,6 +136,11 @@ LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
 
 LoopHandler::~LoopHandler() {
 
+}
+
+bool LoopHandler::validateMerge(std::vector<ExecutionState *> &snapshots, ExecutionState *merged) {
+  ExecutionState *expected = ExecutionState::mergeStates(snapshots);
+  return ExecutionState::areEquiv(executor->solver, merged, expected);
 }
 
 }

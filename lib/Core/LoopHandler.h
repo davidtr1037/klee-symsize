@@ -58,6 +58,8 @@ public:
 
   unsigned getEarlyTerminated();
 
+  bool validateMerge(std::vector<ExecutionState *> &states, ExecutionState *merged);
+
   class ReferenceCounter _refCount;
 
   llvm::Loop *loop;
