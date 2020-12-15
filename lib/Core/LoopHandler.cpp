@@ -92,6 +92,9 @@ void LoopHandler::releaseStates() {
 
     if (ValidateMerge) {
       assert(validateMerge(snapshots, merged));
+      for (ExecutionState *es : snapshots) {
+        delete es;
+      }
     }
 
     executor->mergingSearcher->continueState(*merged);
