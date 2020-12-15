@@ -618,11 +618,11 @@ ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
                                       std::vector<ref<Expr>> &values) {
   assert(suffixes.size() == values.size());
 
-  ref<Expr> summary = values[0];
+  ref<Expr> summary = values[values.size() - 1];
   for (unsigned j = 1; j < values.size(); j++) {
-    ref<Expr> e = values[j];
-    ref<Expr> cond = suffixes[j - 1];
-    summary = SelectExpr::create(cond, summary, e);
+    ref<Expr> cond = suffixes[values.size() - j - 1];
+    ref<Expr> e = values[values.size() - j - 1];
+    summary = SelectExpr::create(cond, e, summary);
   }
 
   return summary;
