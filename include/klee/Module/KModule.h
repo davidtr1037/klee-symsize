@@ -141,6 +141,8 @@ namespace klee {
     /* TODO: add docs */
     void visitLoop(llvm::Function &f, llvm::Loop *loop);
 
+    bool isSupportedLoop(llvm::Loop *loop);
+
     /// Link the provided modules together as one KLEE module.
     ///
     /// If the entry point is empty, all modules are linked together.

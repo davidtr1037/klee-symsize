@@ -384,6 +384,13 @@ void KModule::collectLoopInfo() {
 /* TODO: is it the correct solution? */
 /* TODO: add 'isSupported' attribute? */
 void KModule::visitLoop(Function &f, Loop *loop) {
+  if (!isSupportedLoop(loop)) {
+    Instruction &inst = loop->getHeader()->front();
+    KInstruction *ki = instructionMap[&inst];
+    klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
+    return;
+  }
+
   /* TODO: mark all basic block? */
   Instruction *term = loop->getHeader()->getTerminator();
   KInstruction *ki = instructionMap[term];
@@ -399,6 +406,16 @@ void KModule::visitLoop(Function &f, Loop *loop) {
     kfirst->exitLoops.push_back(loop);
     kfirst->isLoopExit = true;
   }
+}
+
+bool KModule::isSupportedLoop(Loop *loop) {
+  SmallVector<BasicBlock *, 10> blocks;
+  loop->getExitBlocks(blocks);
+  if (blocks.size() != 1) {
+    return false;
+  }
+
+  return true;
 }
 
 void KModule::checkModule() {
