@@ -385,12 +385,6 @@ void KModule::collectLoopInfo() {
 /* TODO: add 'isSupported' attribute? */
 void KModule::visitLoop(Function &f, Loop *loop) {
   bool isSupported = isSupportedLoop(loop);
-  if (!isSupported) {
-    Instruction &inst = loop->getHeader()->front();
-    KInstruction *ki = instructionMap[&inst];
-    klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
-  }
-
   KLoop kloop(loop, isSupported);
 
   /* TODO: mark all basic block? */
