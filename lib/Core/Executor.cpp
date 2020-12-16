@@ -4416,8 +4416,14 @@ void Executor::dumpLoopStats() {
 
 void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
   /* TODO: avoid nested loops? */
-  state.stack.back().isExecutingLoop = true;
-  state.stack.back().loop = ki->entryLoop;
+  StackFrame &top = state.stack.back();
+  const KLoop &kloop = ki->entryLoop;
+  if (kloop.isSupported) {
+    top.isExecutingLoop = true;
+    top.loop = kloop;
+  } else {
+    klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
+  }
 }
 
 void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused) {
@@ -4436,9 +4442,10 @@ void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused)
 }
 
 void Executor::setLoopHandler(ExecutionState &state) {
+  /* TODO: collect loop stats? */
   state.loopHandler = new LoopHandler(this,
                                       &state,
-                                      state.stack.back().loop);
+                                      state.stack.back().loop.loop);
 }
 
 ///

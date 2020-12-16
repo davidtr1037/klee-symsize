@@ -384,17 +384,19 @@ void KModule::collectLoopInfo() {
 /* TODO: is it the correct solution? */
 /* TODO: add 'isSupported' attribute? */
 void KModule::visitLoop(Function &f, Loop *loop) {
-  if (!isSupportedLoop(loop)) {
+  bool isSupported = isSupportedLoop(loop);
+  if (!isSupported) {
     Instruction &inst = loop->getHeader()->front();
     KInstruction *ki = instructionMap[&inst];
     klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
-    return;
   }
+
+  KLoop kloop(loop, isSupported);
 
   /* TODO: mark all basic block? */
   Instruction *term = loop->getHeader()->getTerminator();
   KInstruction *ki = instructionMap[term];
-  ki->entryLoop = loop;
+  ki->entryLoop = kloop;
   ki->isLoopEntry = true;
 
   SmallVector<BasicBlock *, 10> blocks;
@@ -403,7 +405,7 @@ void KModule::visitLoop(Function &f, Loop *loop) {
     /* TODO: mark all basic block? */
     Instruction &first = bb->front();
     KInstruction *kfirst = instructionMap[&first];
-    kfirst->exitLoops.push_back(loop);
+    kfirst->exitLoops.push_back(kloop);
     kfirst->isLoopExit = true;
   }
 }

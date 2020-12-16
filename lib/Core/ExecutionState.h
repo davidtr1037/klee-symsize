@@ -19,6 +19,7 @@
 #include "klee/Expr/Expr.h"
 #include "klee/Expr/ExprVisitor.h"
 #include "klee/Module/KInstIterator.h"
+#include "klee/Module/KLoop.h"
 #include "klee/Solver/Solver.h"
 #include "klee/System/Time.h"
 
@@ -64,13 +65,15 @@ struct StackFrame {
 
   /* TODO: add docs */
   bool isExecutingLoop;
-  /* TODO: add docs */
-  llvm::Loop *loop;
+  /* TODO: use pointer? */
+  KLoop loop;
 
   StackFrame(KInstIterator caller,
+             KFunction *kf);
+  StackFrame(KInstIterator caller,
              KFunction *kf,
-             bool isExecutingLoop = false,
-             llvm::Loop *loop = nullptr);
+             bool isExecutingLoop,
+             KLoop loop);
   StackFrame(const StackFrame &s);
   ~StackFrame();
 };

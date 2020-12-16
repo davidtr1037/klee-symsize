@@ -12,6 +12,7 @@
 
 #include "klee/Config/Version.h"
 #include "klee/Module/InstructionInfoTable.h"
+#include "klee/Module/KLoop.h"
 
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/raw_ostream.h"
@@ -42,10 +43,10 @@ namespace klee {
     int *operands;
     /// Destination register index.
     unsigned dest;
-    /* TODO: add docs */
-    llvm::Loop *entryLoop;
-    /* TODO: add docs */
-    std::vector<llvm::Loop *> exitLoops;
+    /* TODO: use pointer? */
+    KLoop entryLoop;
+    /* TODO: use pointer? */
+    std::vector<KLoop> exitLoops;
     /* TODO: add docs */
     bool isLoopEntry;
     /* TODO: add docs */
@@ -57,7 +58,12 @@ namespace klee {
     std::string getSourceLocation() const;
 
     bool hasExitLoop(llvm::Loop *loop) {
-      return std::find(exitLoops.begin(), exitLoops.end(), loop) != exitLoops.end();
+      for (const KLoop &kloop : exitLoops) {
+        if (kloop.loop == loop) {
+          return true;
+        }
+      }
+      return false;
     }
 
   };

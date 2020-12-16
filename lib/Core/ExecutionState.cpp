@@ -46,8 +46,14 @@ std::uint32_t ExecutionState::nextID = 1;
 
 /***/
 
-StackFrame::StackFrame(KInstIterator _caller, KFunction *_kf, bool isExecutingLoop, Loop *loop)
+StackFrame::StackFrame(KInstIterator _caller, KFunction *_kf)
   : caller(_caller), kf(_kf), callPathNode(0), 
+    minDistToUncoveredOnReturn(0), varargs(0), isExecutingLoop(false) {
+  locals = new Cell[kf->numRegisters];
+}
+
+StackFrame::StackFrame(KInstIterator _caller, KFunction *_kf, bool isExecutingLoop, KLoop loop)
+  : caller(_caller), kf(_kf), callPathNode(0),
     minDistToUncoveredOnReturn(0), varargs(0), isExecutingLoop(isExecutingLoop), loop(loop) {
   locals = new Cell[kf->numRegisters];
 }
