@@ -4421,8 +4421,6 @@ void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
   if (kloop.isSupported) {
     top.isExecutingLoop = true;
     top.loop = kloop;
-  } else {
-    klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
   }
 }
 
@@ -4443,9 +4441,13 @@ void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused)
 
 void Executor::setLoopHandler(ExecutionState &state) {
   /* TODO: collect loop stats? */
-  state.loopHandler = new LoopHandler(this,
-                                      &state,
-                                      state.stack.back().loop.loop);
+  const KLoop &kloop = state.stack.back().loop;
+  if (kloop.isSupported) {
+    state.loopHandler = new LoopHandler(this, &state, kloop.loop);
+  } else {
+    KInstruction *ki = state.prevPC;
+    klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
+  }
 }
 
 ///
