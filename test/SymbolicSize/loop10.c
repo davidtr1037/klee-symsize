@@ -2,6 +2,9 @@
 // RUN: rm -rf %t.klee-out
 // RUN: %klee --output-dir=%t.klee-out -libc=uclibc --use-loop-merge -use-optimized-merge=1 -allocate-sym-size -capacity=200 --search=dfs %t.bc 2>&1
 
+// CHECK: KLEE: merged 3 states (early = 1)
+// CHECK: KLEE: done: unmerged completed paths = 2
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +15,12 @@
 
 #define MAX_SIZE (10)
 
+void foo(unsigned i) {
+    if (i == 2) {
+        abort();
+    }
+}
+
 int main(int argc, char *argv[]) {
     size_t n;
     klee_make_symbolic(&n, sizeof(n), "n");
@@ -20,9 +29,7 @@ int main(int argc, char *argv[]) {
     unsigned char *p = malloc(n);
     for (unsigned i = 0; i < n; i++) {
         p[i] = 7;
-        if (i == 2) {
-            abort();
-        }
+        foo(i);
     }
 
     return 0;

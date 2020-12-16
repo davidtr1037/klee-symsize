@@ -46,9 +46,9 @@ std::uint32_t ExecutionState::nextID = 1;
 
 /***/
 
-StackFrame::StackFrame(KInstIterator _caller, KFunction *_kf)
+StackFrame::StackFrame(KInstIterator _caller, KFunction *_kf, bool isExecutingLoop, Loop *loop)
   : caller(_caller), kf(_kf), callPathNode(0), 
-    minDistToUncoveredOnReturn(0), varargs(0), isExecutingLoop(false), loop(nullptr) {
+    minDistToUncoveredOnReturn(0), varargs(0), isExecutingLoop(isExecutingLoop), loop(loop) {
   locals = new Cell[kf->numRegisters];
 }
 
@@ -147,7 +147,11 @@ ExecutionState *ExecutionState::branch() {
 }
 
 void ExecutionState::pushFrame(KInstIterator caller, KFunction *kf) {
-  stack.emplace_back(StackFrame(caller, kf));
+  if (stack.empty()) {
+    stack.emplace_back(StackFrame(caller, kf));
+  } else {
+    stack.emplace_back(StackFrame(caller, kf, stack.back().isExecutingLoop, stack.back().loop));
+  }
 }
 
 void ExecutionState::popFrame() {

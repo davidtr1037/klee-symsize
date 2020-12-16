@@ -15,6 +15,11 @@
 
 #include <klee/klee.h>
 
+/* TODO: put in common? */
+void assert_wrapper(int e) {
+  assert(e);
+}
+
 int main(int argc, char *argv[]) {
     unsigned int input_size;
     klee_make_symbolic(&input_size, sizeof(input_size), "input_size");
@@ -28,7 +33,7 @@ int main(int argc, char *argv[]) {
 
     assert(z == input_size);
     for (int i = 0; i < input_size; i++) {
-      assert(input[i] == 7);
+      assert_wrapper(input[i] == 7);
     }
 
     return 0;

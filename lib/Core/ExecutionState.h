@@ -67,7 +67,10 @@ struct StackFrame {
   /* TODO: add docs */
   llvm::Loop *loop;
 
-  StackFrame(KInstIterator caller, KFunction *kf);
+  StackFrame(KInstIterator caller,
+             KFunction *kf,
+             bool isExecutingLoop = false,
+             llvm::Loop *loop = nullptr);
   StackFrame(const StackFrame &s);
   ~StackFrame();
 };
