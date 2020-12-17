@@ -720,14 +720,16 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
 void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,
                                          TimingSolver *solver) {
   for (const MemoryObject *mo : mutated) {
-    const ObjectState *os = addressSpace.findObject(mo);
     /* TODO: create only if needed */
+    const ObjectState *os = addressSpace.findObject(mo);
     ObjectState *wos = addressSpace.getWriteable(mo, os);
 
     for (unsigned i = 0; i < mo->capacity; i++) {
-      ref<Expr> v = os->read8(i);
-      ref<Expr> x = simplifyArrayElement(mo, i, v, solver);
-      wos->write(i, x);
+      ref<Expr> v = wos->read8(i);
+      if (!isa<ConstantExpr>(v)) {
+        ref<Expr> x = simplifyArrayElement(mo, i, v, solver);
+        wos->write(i, x);
+      }
     }
   }
 }
