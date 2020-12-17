@@ -20,6 +20,7 @@ klee_add_component(kleeCore
   LoopHandler.cpp
   Memory.cpp
   MemoryManager.cpp
+  MergeUtils.cpp
   PTree.cpp
   Searcher.cpp
   SeedInfo.cpp

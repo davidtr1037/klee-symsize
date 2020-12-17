@@ -8,8 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "ExecutionState.h"
-
 #include "Memory.h"
+#include "MergeUtils.h"
 
 #include "klee/Expr/Expr.h"
 #include "klee/Expr/ExprVisitor.h"
@@ -37,6 +37,11 @@ namespace {
 cl::opt<bool> DebugLogStateMerge(
     "debug-log-state-merge", cl::init(false),
     cl::desc("Debug information for underlying state merging (default=false)"),
+    cl::cat(MergeCat));
+
+cl::opt<bool> OptimizeArrayValues(
+    "optimize-array-values", cl::init(true),
+    cl::desc(""),
     cl::cat(MergeCat));
 }
 
@@ -621,6 +626,10 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     m.addConstraint(orExpr);
   }
 
+  if (OptimizeArrayValues) {
+    merged->optimizeArrayValues(mutated, loopHandler->solver);
+  }
+
   return merged;
 }
 
@@ -706,4 +715,38 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
   }
 
   return true;
+}
+
+void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,
+                                         TimingSolver *solver) {
+  for (const MemoryObject *mo : mutated) {
+    const ObjectState *os = addressSpace.findObject(mo);
+    /* TODO: create only if needed */
+    ObjectState *wos = addressSpace.getWriteable(mo, os);
+
+    for (unsigned i = 0; i < mo->capacity; i++) {
+      ref<Expr> v = os->read8(i);
+      ref<Expr> x = simplifyArrayElement(mo, i, v, solver);
+      wos->write(i, x);
+    }
+  }
+}
+
+ref<Expr> ExecutionState::simplifyArrayElement(const MemoryObject *mo,
+                                               uint64_t offset,
+                                               ref<Expr> v,
+                                               TimingSolver *solver) {
+  if (isa<ConstantExpr>(v)) {
+    return v;
+  }
+
+  bool revisit = false;
+  do {
+    ITEOptimizer visitor(*this, offset, mo->getSizeExpr(), solver);
+    ref<Expr> e = visitor.visit(v);
+    revisit = !isa<ConstantExpr>(e) && visitor.changed;
+    v = e;
+  } while (revisit);
+
+  return v;
 }

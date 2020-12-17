@@ -1,6 +1,8 @@
 #ifndef KLEE_LOOPHANDLER_H
 #define KLEE_LOOPHANDLER_H
 
+#include "TimingSolver.h"
+
 #include "klee/ADT/Ref.h"
 #include "klee/Expr/Constraints.h"
 
@@ -27,8 +29,6 @@ class ExecutionState;
 class LoopHandler {
 
 private:
-
-  Executor *executor;
 
   unsigned closedStateCount;
 
@@ -61,6 +61,10 @@ public:
   bool validateMerge(std::vector<ExecutionState *> &states, ExecutionState *merged);
 
   class ReferenceCounter _refCount;
+
+  Executor *executor;
+
+  TimingSolver *solver;
 
   llvm::Loop *loop;
 

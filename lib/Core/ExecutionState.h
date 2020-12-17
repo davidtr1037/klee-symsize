@@ -228,6 +228,15 @@ public:
   static bool areEquiv(TimingSolver *solver,
                        const ExecutionState *sa,
                        const ExecutionState *sb);
+
+  void optimizeArrayValues(std::set<const MemoryObject*> mutated,
+                           TimingSolver *solver);
+
+  ref<Expr> simplifyArrayElement(const MemoryObject *mo,
+                                 uint64_t offset,
+                                 ref<Expr> v,
+                                 TimingSolver *solver);
+
 };
 
 struct ExecutionStateIDCompare {

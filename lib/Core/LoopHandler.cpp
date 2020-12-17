@@ -129,7 +129,12 @@ unsigned LoopHandler::getEarlyTerminated() {
 }
 
 LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
-    : executor(_executor), closedStateCount(0), activeStates(0), earlyTerminated(0), loop(loop) {
+    : closedStateCount(0),
+      activeStates(0),
+      earlyTerminated(0),
+      executor(_executor),
+      solver(_executor->solver),
+      loop(loop) {
   assert(loop);
   addOpenState(es);
   for (ref<Expr> e : es->constraints) {
