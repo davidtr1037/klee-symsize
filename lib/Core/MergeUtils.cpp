@@ -5,14 +5,14 @@ using namespace klee;
 
 ExprVisitor::Action ITEOptimizer::visitSelect(const SelectExpr &se) {
   ref<Expr> range = UltExpr::create(ConstantExpr::create(offset, Expr::Int64), size);
-  ref<Expr> x = AndExpr::create(range, se.cond);
+  state.constraints.push_back(range);
 
   Solver::Validity result;
-  bool success = solver->evaluate(state.constraints, x, result, state.queryMetaData);
+  bool success = solver->evaluate(state.constraints, se.cond, result, state.queryMetaData);
   assert(success);
 
-  //llvm::errs() << "RES " << result << "\n";
-  //se.dump();
+  /* TODO: a bit hacky... */
+  state.constraints.pop_back();
 
   if (result == Solver::Unknown) {
     return Action::doChildren();
