@@ -738,7 +738,7 @@ ref<Expr> ExecutionState::simplifyArrayElement(const MemoryObject *mo,
                                                uint64_t offset,
                                                ref<Expr> v,
                                                TimingSolver *solver) {
-  if (isa<ConstantExpr>(v)) {
+  if (isa<ConstantExpr>(v) || mo->hasFixedSize()) {
     return v;
   }
 
