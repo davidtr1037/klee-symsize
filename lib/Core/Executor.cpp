@@ -4349,7 +4349,7 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
 
   while (result == Solver::False) {
     solver->setTimeout(coreSolverTimeout);
-    ref<Expr> bound = UltExpr::create(
+    ref<Expr> bound = UleExpr::create(
       size,
       ConstantExpr::create(capacity, Context::get().getPointerWidth())
     );
