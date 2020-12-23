@@ -57,7 +57,7 @@ namespace klee {
     virtual ~KInstruction();
     std::string getSourceLocation() const;
 
-    bool hasExitLoop(llvm::Loop *loop) {
+    bool isExitOf(llvm::Loop *loop) {
       for (const KLoop &kloop : exitLoops) {
         if (kloop.loop == loop) {
           return true;

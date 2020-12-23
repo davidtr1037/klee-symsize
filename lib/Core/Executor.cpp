@@ -4430,8 +4430,11 @@ void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused)
     return;
   }
 
-  /* match against the entry point */
-  assert(ki->hasExitLoop(state.loopHandler->loop));
+  if (!ki->isExitOf(state.loopHandler->loop)) {
+    /* TODO: supposed to be exit of inner loop, validate? */
+    return;
+  }
+
   assert(mergingSearcher->inCloseMerge.find(&state) == mergingSearcher->inCloseMerge.end());
   mergingSearcher->inCloseMerge.insert(&state);
   state.loopHandler->addClosedState(&state, ki->inst);
