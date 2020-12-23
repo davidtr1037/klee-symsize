@@ -143,7 +143,10 @@ LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
 }
 
 LoopHandler::~LoopHandler() {
-
+  for (auto& i: reachedCloseMerge) {
+    vector<ExecutionState *> &states = i.second;
+    assert(states.empty());
+  }
 }
 
 bool LoopHandler::validateMerge(std::vector<ExecutionState *> &snapshots, ExecutionState *merged) {
