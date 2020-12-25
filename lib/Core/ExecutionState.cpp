@@ -39,8 +39,9 @@ cl::opt<bool> DebugLogStateMerge(
     cl::desc("Debug information for underlying state merging (default=false)"),
     cl::cat(MergeCat));
 
+/* TODO: can't be used with -validate-merge */
 cl::opt<bool> OptimizeArrayValues(
-    "optimize-array-values", cl::init(true),
+    "optimize-array-values", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
 }
