@@ -69,6 +69,7 @@ void LoopHandler::addClosedState(ExecutionState *es,
 }
 
 void LoopHandler::releaseStates() {
+  unsigned groupId = 0;
   for (auto &i: mergeGroups) {
     vector<ExecutionState *> &states = i.second;
     vector<ExecutionState *> snapshots;
@@ -80,8 +81,8 @@ void LoopHandler::releaseStates() {
     }
 
     ExecutionState *merged;
+    bool isComplete = (mergeGroups.size() == 1) && (earlyTerminated == 0);
     if (UseOptimizedMerge) {
-      bool isComplete = (mergeGroups.size() == 1) && (earlyTerminated == 0);
       merged = ExecutionState::mergeStatesOptimized(states, isComplete, this);
     } else {
       merged = ExecutionState::mergeStates(states);
@@ -100,7 +101,14 @@ void LoopHandler::releaseStates() {
 
     executor->mergingSearcher->continueState(*merged);
     executor->collectMergeStats(*merged);
-    klee_message("merged %lu states (early = %u)", states.size(), earlyTerminated);
+    if (mergeGroups.size() == 1) {
+      klee_message("merged %lu states (complete = %u)", states.size(), isComplete);
+    } else {
+      klee_message("merged %lu states (complete = %u, group = %u)",
+                   states.size(),
+                   isComplete,
+                   groupId);
+    }
 
     for (ExecutionState *es : states) {
       executor->mergingSearcher->inCloseMerge.erase(es);
@@ -113,6 +121,8 @@ void LoopHandler::releaseStates() {
       executor->terminateState(*es);
       executor->interpreterHandler->decUnmergedExploredPaths();
     }
+
+    groupId++;
   }
   mergeGroups.clear();
 }
