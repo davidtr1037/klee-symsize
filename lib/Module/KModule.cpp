@@ -405,6 +405,7 @@ void KModule::visitLoop(Function &f, Loop *loop) {
 }
 
 bool KModule::isSupportedLoop(Loop *loop) {
+  /* TODO: remove this */
   std::set<std::string> wl;
   wl.insert("asn1_get_length_der");
   wl.insert("asn1_get_tag_der");
