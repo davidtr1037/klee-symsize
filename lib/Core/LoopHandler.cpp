@@ -149,7 +149,7 @@ LoopHandler::~LoopHandler() {
     return;
   }
 
-  for (auto& i: mergeGroups) {
+  for (auto &i: mergeGroups) {
     vector<ExecutionState *> &states = i.second;
     assert(states.empty());
   }
