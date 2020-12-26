@@ -220,6 +220,7 @@ public:
 
   static ExecutionState *mergeStatesOptimized(std::vector<ExecutionState *> &states,
                                               bool isComplete,
+                                              ref<Expr> mergedConstraint,
                                               LoopHandler *loopHandler);
 
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
@@ -237,6 +238,7 @@ public:
                                  ref<Expr> v,
                                  TimingSolver *solver);
 
+  static ref<Expr> buildMergedConstraint(std::vector<ExecutionState *> &states);
 };
 
 struct ExecutionStateIDCompare {

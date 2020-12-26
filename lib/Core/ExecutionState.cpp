@@ -492,6 +492,7 @@ ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &state
 
 ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState *> &states,
                                                      bool isComplete,
+                                                     ref<Expr> mergedConstraint,
                                                      LoopHandler *loopHandler) {
   assert(!states.empty());
   ExecutionState *merged = states[0];
@@ -611,18 +612,12 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   }
 
   if (!isComplete) {
-    ref<Expr> orExpr = ConstantExpr::create(0, Expr::Bool);
-    for (ExecutionState *es : states) {
-      /* build suffix conjunction */
-      ref<Expr> andExpr = ConstantExpr::create(1, Expr::Bool);
-      for (ref<Expr> e : es->suffixConstraints) {
-        andExpr = AndExpr::create(andExpr, e);
-      }
-
-      /* update disjunction */
-      orExpr = OrExpr::create(orExpr, andExpr);
+    ref<Expr> orExpr;
+    if (mergedConstraint.isNull()) {
+      orExpr = buildMergedConstraint(states);
+    } else {
+      orExpr = mergedConstraint;
     }
-
     /* TODO: used ExecutionState's addConstraint? */
     m.addConstraint(orExpr);
   }
@@ -752,4 +747,20 @@ ref<Expr> ExecutionState::simplifyArrayElement(const MemoryObject *mo,
   } while (revisit);
 
   return v;
+}
+
+ref<Expr> ExecutionState::buildMergedConstraint(std::vector<ExecutionState *> &states) {
+  ref<Expr> orExpr = ConstantExpr::create(0, Expr::Bool);
+  for (ExecutionState *es : states) {
+    /* build suffix conjunction */
+    ref<Expr> andExpr = ConstantExpr::create(1, Expr::Bool);
+    for (ref<Expr> e : es->suffixConstraints) {
+      andExpr = AndExpr::create(andExpr, e);
+    }
+
+    /* update disjunction */
+    orExpr = OrExpr::create(orExpr, andExpr);
+  }
+
+  return orExpr;
 }

@@ -28,6 +28,11 @@ cl::opt<bool> UseOptimizedMerge(
     cl::desc(""),
     cl::cat(klee::LoopCat));
 
+cl::opt<bool> OptimizeGroupMerge(
+    "optimize-group-merge", cl::init(false),
+    cl::desc(""),
+    cl::cat(klee::LoopCat));
+
 cl::opt<bool> ValidateMerge(
     "validate-merge", cl::init(false),
     cl::desc(""),
@@ -69,6 +74,25 @@ void LoopHandler::addClosedState(ExecutionState *es,
 }
 
 void LoopHandler::releaseStates() {
+  assert(mergeGroups.size() <= 2);
+
+  std::vector<ref<Expr>> toAdd;
+  unsigned largestGroup = 0;
+  if (mergeGroups.size() == 2) {
+    unsigned groupId = 0;
+    size_t maxCount = 0;
+    for (auto &i : mergeGroups) {
+      vector<ExecutionState *> &states = i.second;
+      ref<Expr> e = ExecutionState::buildMergedConstraint(states);
+      toAdd.push_back(e);
+      if (states.size() > maxCount) {
+        maxCount = states.size();
+        largestGroup = groupId;
+      }
+      groupId++;
+    }
+  }
+
   unsigned groupId = 0;
   for (auto &i: mergeGroups) {
     vector<ExecutionState *> &states = i.second;
@@ -83,7 +107,16 @@ void LoopHandler::releaseStates() {
     ExecutionState *merged;
     bool isComplete = (mergeGroups.size() == 1) && (earlyTerminated == 0);
     if (UseOptimizedMerge) {
-      merged = ExecutionState::mergeStatesOptimized(states, isComplete, this);
+      ref<Expr> e = nullptr;
+      if (OptimizeGroupMerge && mergeGroups.size() > 1 && groupId == largestGroup) {
+        e = ConstantExpr::create(1, Expr::Bool);
+        for (unsigned k = 0; k < toAdd.size(); k++) {
+          if (k != largestGroup) {
+            e = AndExpr::create(e, NotExpr::create(toAdd[k]));
+          }
+        }
+      }
+      merged = ExecutionState::mergeStatesOptimized(states, isComplete, e, this);
     } else {
       merged = ExecutionState::mergeStates(states);
     }
