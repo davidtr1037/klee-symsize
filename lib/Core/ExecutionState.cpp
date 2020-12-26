@@ -452,8 +452,8 @@ ExprVisitor::Action TaintVisitor::visitRead(const ReadExpr &e) {
   }
 }
 
-ExecutionContext::ExecutionContext(ExecutionState &state) {
-  const KInstruction *kinst = state.prevPC;
+ExecutionContext::ExecutionContext(ExecutionState &state, bool usePrevPC) {
+  const KInstruction *kinst = usePrevPC ? state.prevPC : state.pc;
   for (auto i = state.stack.rbegin(); i != state.stack.rend(); i++) {
     StackFrame &sf = *i;
     Function *f = sf.kf->function;

@@ -279,7 +279,7 @@ class ExecutionContext {
 
 public:
 
-  ExecutionContext(ExecutionState &state);
+  ExecutionContext(ExecutionState &state, bool usePrevPC = true);
 
   bool operator==(const ExecutionContext &other) const {
     return trace == other.trace;

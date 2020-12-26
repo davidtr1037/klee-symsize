@@ -418,6 +418,7 @@ cl::opt<bool> DebugForks("debug-forks", cl::init(false), cl::desc(""));
 cl::opt<bool> DebugTaint("debug-taint", cl::init(false), cl::desc(""));
 cl::opt<bool> DebugLoopForks("debug-loop-forks", cl::init(false), cl::desc(""));
 cl::opt<bool> CollectLoopStats("collect-loop-stats", cl::init(false), cl::desc(""));
+cl::opt<bool> CollectMergeStats("collect-merge-stats", cl::init(false), cl::desc(""));
 
 } // namespace
 
@@ -4041,6 +4042,9 @@ void Executor::runFunctionAsMain(Function *f,
   if (CollectLoopStats) {
     dumpLoopStats();
   }
+  if (CollectMergeStats) {
+    dumpMergeStats();
+  }
 
   // hack to clear memory objects
   delete memory;
@@ -4450,6 +4454,37 @@ void Executor::setLoopHandler(ExecutionState &state) {
   } else {
     KInstruction *ki = state.prevPC;
     klee_warning("unsupported loop: %s:%u", ki->info->file.data(), ki->info->line);
+  }
+}
+
+void Executor::collectMergeStats(ExecutionState &state) {
+  if (!CollectMergeStats) {
+    return;
+  }
+  ExecutionContext ec(state, false);
+  if (mergeStats.find(ec) == mergeStats.end()) {
+    mergeStats[ec] = 0;
+  }
+  mergeStats[ec]++;
+}
+
+void Executor::dumpMergeStats() {
+  klee_message("Merge Statistics");
+  uint64_t total = 0;
+  for (auto i : mergeStats) {
+    total += i.second;
+  }
+  klee_message("total count: %lu", total);
+
+  for (auto i : mergeStats) {
+    const ExecutionContext &ec = i.first;
+    uint64_t count = i.second;
+    klee_message("---");
+    klee_message("count: %lu", count);
+    for (const CodeLocation &l : ec.trace) {
+      klee_message("%s:%u (%s)", basename(l.file.data()), l.line, l.function.data());
+    }
+    klee_message("---");
   }
 }
 

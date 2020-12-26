@@ -223,6 +223,8 @@ private:
 
   std::unordered_map<ExecutionContext, uint64_t, ExecutionContextHash> loopStats;
 
+  std::unordered_map<ExecutionContext, uint64_t, ExecutionContextHash> mergeStats;
+
   uint64_t symbolicSizeAllocations;
 
   llvm::Function* getTargetFunction(llvm::Value *calledVal,
@@ -460,9 +462,13 @@ private:
   /// Only for debug purposes; enable via debugger or klee-control
   void dumpStates();
   void dumpPTree();
+
   size_t getCapacity(ExecutionState &state, ref<Expr> size);
+
   void setTaint(ExecutionState &state, ref<Expr> size);
+
   void collectLoopStats(ExecutionState &state);
+
   void dumpLoopStats();
 
   void onLoopEntry(ExecutionState &state, KInstruction *ki);
@@ -470,6 +476,10 @@ private:
   void onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused);
 
   void setLoopHandler(ExecutionState &state);
+
+  void collectMergeStats(ExecutionState &state);
+
+  void dumpMergeStats();
 
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,

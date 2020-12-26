@@ -99,6 +99,7 @@ void LoopHandler::releaseStates() {
     }
 
     executor->mergingSearcher->continueState(*merged);
+    executor->collectMergeStats(*merged);
     klee_message("merged %lu states (early = %u)", states.size(), earlyTerminated);
 
     for (ExecutionState *es : states) {
