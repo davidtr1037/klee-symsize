@@ -34,7 +34,7 @@ private:
 
   std::vector<ExecutionState *> openStates;
 
-  std::map<llvm::Instruction *, std::vector<ExecutionState *>> reachedCloseMerge;
+  std::map<llvm::Instruction *, std::vector<ExecutionState *>> mergeGroups;
 
   unsigned activeStates;
 

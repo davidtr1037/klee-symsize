@@ -50,12 +50,12 @@ void LoopHandler::addClosedState(ExecutionState *es,
   ++closedStateCount;
   removeOpenState(es);
 
-  auto closePoint = reachedCloseMerge.find(mp);
-  if (closePoint == reachedCloseMerge.end()) {
-    reachedCloseMerge[mp].push_back(es);
+  auto i = mergeGroups.find(mp);
+  if (i == mergeGroups.end()) {
+    mergeGroups[mp].push_back(es);
   } else {
-    auto &cpv = closePoint->second;
-    cpv.push_back(es);
+    std::vector<ExecutionState *> &states = i->second;
+    states.push_back(es);
   }
 
   executor->mergingSearcher->pauseState(*es);
@@ -69,7 +69,7 @@ void LoopHandler::addClosedState(ExecutionState *es,
 }
 
 void LoopHandler::releaseStates() {
-  for (auto& i: reachedCloseMerge) {
+  for (auto &i: mergeGroups) {
     vector<ExecutionState *> &states = i.second;
     vector<ExecutionState *> snapshots;
     if (ValidateMerge) {
@@ -81,7 +81,8 @@ void LoopHandler::releaseStates() {
 
     ExecutionState *merged;
     if (UseOptimizedMerge) {
-      merged = ExecutionState::mergeStatesOptimized(states, earlyTerminated == 0, this);
+      bool isComplete = (mergeGroups.size() == 1) && (earlyTerminated == 0);
+      merged = ExecutionState::mergeStatesOptimized(states, isComplete, this);
     } else {
       merged = ExecutionState::mergeStates(states);
     }
@@ -112,7 +113,7 @@ void LoopHandler::releaseStates() {
       executor->interpreterHandler->decUnmergedExploredPaths();
     }
   }
-  reachedCloseMerge.clear();
+  mergeGroups.clear();
 }
 
 void LoopHandler::markEarlyTerminated(ExecutionState &state) {
@@ -143,7 +144,12 @@ LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
 }
 
 LoopHandler::~LoopHandler() {
-  for (auto& i: reachedCloseMerge) {
+  if (executor->haltExecution) {
+    /* if execution is interrupted, may contain unreleased states */
+    return;
+  }
+
+  for (auto& i: mergeGroups) {
     vector<ExecutionState *> &states = i.second;
     assert(states.empty());
   }
