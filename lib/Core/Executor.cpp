@@ -360,6 +360,7 @@ cl::opt<std::string> TimerInterval(
     cl::init("1s"),
     cl::cat(TerminationCat));
 
+cl::opt<bool> WarnUnsupportedLoops("warn-unsupported-loops", cl::init(true), cl::desc(""));
 
 /*** Debugging options ***/
 
@@ -4425,6 +4426,13 @@ void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
   if (kloop.isSupported) {
     top.isExecutingLoop = true;
     top.loop = kloop;
+  } else {
+    if (WarnUnsupportedLoops) {
+      /* TODO: fix warning */
+      char msg[1000];
+      snprintf(msg, sizeof(msg), "unsupported loop: %s:%u", state.prevPC->info->file.data(), state.prevPC->info->line);
+      klee_warning_once(kloop.loop, msg);
+    }
   }
 }
 
