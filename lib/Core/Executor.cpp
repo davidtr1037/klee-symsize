@@ -4431,7 +4431,7 @@ void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
       /* TODO: fix warning */
       char msg[1000];
       snprintf(msg, sizeof(msg), "unsupported loop: %s:%u", state.prevPC->info->file.data(), state.prevPC->info->line);
-      klee_warning_once(kloop.loop, msg);
+      klee_warning_once(kloop.loop, "%s", msg);
     }
   }
 }
