@@ -151,7 +151,7 @@ void LoopHandler::releaseStates() {
     for (unsigned i = 1; i < states.size(); i++) {
       ExecutionState *es = states[i];
       executor->mergingSearcher->continueState(*es);
-      executor->terminateState(*es);
+      executor->terminateStateEarly(*es, "Merge");
       executor->interpreterHandler->decUnmergedExploredPaths();
     }
 
