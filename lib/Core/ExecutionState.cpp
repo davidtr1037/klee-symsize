@@ -439,6 +439,7 @@ bool ExecutionState::isTaintedExpr(ref<Expr> e) {
 
 ExprVisitor::Action TaintVisitor::visitRead(const ReadExpr &e) {
   for (const UpdateNode *un = e.updates.head.get(); un != nullptr; un = un->next.get()) {
+    /* TODO: break if found? */
     visit(un->index);
     visit(un->value);
   }
