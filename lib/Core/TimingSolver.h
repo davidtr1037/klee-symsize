@@ -45,7 +45,7 @@ public:
   }
 
   bool evaluate(const ConstraintSet &, ref<Expr>, Solver::Validity &result,
-                SolverQueryMetaData &metaData);
+                SolverQueryMetaData &metaData, bool auxiliary = false);
 
   bool mustBeTrue(const ConstraintSet &, ref<Expr>, bool &result,
                   SolverQueryMetaData &metaData);

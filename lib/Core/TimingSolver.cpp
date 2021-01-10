@@ -15,6 +15,7 @@
 #include "klee/Statistics/Statistics.h"
 #include "klee/Statistics/TimerStatIncrementer.h"
 #include "klee/Solver/Solver.h"
+#include "klee/Solver/SolverStats.h"
 
 #include "CoreStats.h"
 
@@ -25,7 +26,8 @@ using namespace llvm;
 
 bool TimingSolver::evaluate(const ConstraintSet &constraints, ref<Expr> expr,
                             Solver::Validity &result,
-                            SolverQueryMetaData &metaData) {
+                            SolverQueryMetaData &metaData,
+                            bool auxiliary) {
   // Fast path, to avoid timer and OS overhead.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(expr)) {
     result = CE->isTrue() ? Solver::True : Solver::False;
@@ -33,6 +35,10 @@ bool TimingSolver::evaluate(const ConstraintSet &constraints, ref<Expr> expr,
   }
 
   TimerStatIncrementer timer(stats::solverTime);
+
+  if (auxiliary) {
+    ++stats::auxilaryQueries;
+  }
 
   if (simplifyExprs)
     expr = ConstraintManager::simplifyExpr(constraints, expr);

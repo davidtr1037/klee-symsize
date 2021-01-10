@@ -8,7 +8,7 @@ ExprVisitor::Action ITEOptimizer::visitSelect(const SelectExpr &se) {
   state.constraints.push_back(range);
 
   Solver::Validity result;
-  bool success = solver->evaluate(state.constraints, se.cond, result, state.queryMetaData);
+  bool success = solver->evaluate(state.constraints, se.cond, result, state.queryMetaData, true);
   assert(success);
 
   /* TODO: a bit hacky... */

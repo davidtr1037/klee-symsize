@@ -18,6 +18,7 @@
 #include "klee/Module/KInstruction.h"
 #include "klee/Module/KModule.h"
 #include "klee/Support/OptionCategories.h"
+#include "klee/Solver/SolverStats.h"
 
 #include "llvm/IR/Function.h"
 #include "llvm/Support/CommandLine.h"
@@ -725,7 +726,7 @@ void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,
       /* the size can be actually less then the capacity */
       Solver::Validity result;
       ref<Expr> range = UltExpr::create(ConstantExpr::create(i, Expr::Int64), mo->getSizeExpr());
-      bool success = solver->evaluate(constraints, range, result, queryMetaData);
+      bool success = solver->evaluate(constraints, range, result, queryMetaData, true);
       assert(success);
       if (result == Solver::False) {
         /* no need to check further... */

@@ -1529,6 +1529,8 @@ int main(int argc, char **argv, char **envp) {
     *theStatisticManager->getStatisticByName("Instructions");
   uint64_t forks =
     *theStatisticManager->getStatisticByName("Forks");
+  uint64_t auxilaryQueries =
+    *theStatisticManager->getStatisticByName("AuxilaryQueries");
 
   handler->getInfoStream()
     << "KLEE: done: explored paths = " << 1 + forks << "\n";
@@ -1543,7 +1545,8 @@ int main(int argc, char **argv, char **envp) {
     << "KLEE: done: total queries = " << queries << "\n"
     << "KLEE: done: valid queries = " << queriesValid << "\n"
     << "KLEE: done: invalid queries = " << queriesInvalid << "\n"
-    << "KLEE: done: query cex = " << queryCounterexamples << "\n";
+    << "KLEE: done: query cex = " << queryCounterexamples << "\n"
+    << "KLEE: done: total aux queries = " << auxilaryQueries << "\n";
 
   std::stringstream stats;
   stats << "\n";
