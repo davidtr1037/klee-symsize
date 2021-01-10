@@ -41,8 +41,14 @@ cl::opt<bool> DebugLogStateMerge(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
-cl::opt<bool> OptimizeArrayValues(
-    "optimize-array-values", cl::init(false),
+cl::opt<bool> OptimizeArrayValuesPost(
+    "optimize-array-values-post", cl::init(false),
+    cl::desc(""),
+    cl::cat(MergeCat));
+
+/* TODO: can't be used with -validate-merge */
+cl::opt<bool> OptimizeArrayValuesPre(
+    "optimize-array-values-pre", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
 }
@@ -594,14 +600,21 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
 
     for (unsigned i = 0; i < mo->capacity; i++) {
       std::vector<ref<Expr>> values;
-      for (ExecutionState *es : states) {
+      std::vector<ref<Expr>> neededSuffixes;
+      for (unsigned j = 0; j < states.size(); j++) {
+        ExecutionState *es = states[j];
         const ObjectState *other = es->addressSpace.findObject(mo);
         assert(other);
         assert(wos->getObject()->capacity == other->getObject()->capacity);
-        values.push_back(other->read8(i));
+        if (!OptimizeArrayValuesPre || es->isValidOffset(loopHandler->solver, mo, i)) {
+          values.push_back(other->read8(i));
+          neededSuffixes.push_back(suffixes[j]);
+        }
       }
-      ref<Expr> v = mergeValues(suffixes, values);
-      wos->write(i, v);
+      if (!values.empty()) {
+        ref<Expr> v = mergeValues(neededSuffixes, values);
+        wos->write(i, v);
+      }
     }
   }
 
@@ -624,7 +637,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     m.addConstraint(orExpr);
   }
 
-  if (OptimizeArrayValues) {
+  if (OptimizeArrayValuesPost) {
     merged->optimizeArrayValues(mutated, loopHandler->solver);
   }
 
