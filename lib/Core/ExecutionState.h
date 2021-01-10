@@ -239,6 +239,10 @@ public:
                                  TimingSolver *solver);
 
   static ref<Expr> buildMergedConstraint(std::vector<ExecutionState *> &states);
+
+  bool isValidOffset(TimingSolver *solver,
+                     const MemoryObject *mo,
+                     uint64_t offset);
 };
 
 struct ExecutionStateIDCompare {

@@ -717,13 +717,6 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
 
 void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,
                                          TimingSolver *solver) {
-  if (mutated.size() != 0) {
-    errs() << "ARRAY OPT\n";
-    for (const MemoryObject *mo : mutated) {
-      errs() << mo->address << "\n";
-    }
-    dumpStack(errs());
-  }
   for (const MemoryObject *mo : mutated) {
     /* TODO: create only if needed */
     const ObjectState *os = addressSpace.findObject(mo);
@@ -784,4 +777,15 @@ ref<Expr> ExecutionState::buildMergedConstraint(std::vector<ExecutionState *> &s
   }
 
   return orExpr;
+}
+
+bool ExecutionState::isValidOffset(TimingSolver *solver,
+                                   const MemoryObject *mo,
+                                   uint64_t offset) {
+  Solver::Validity result;
+  ref<Expr> range = UltExpr::create(ConstantExpr::create(offset, Expr::Int64), mo->getSizeExpr());
+  bool success = solver->evaluate(constraints, range, result, queryMetaData, true);
+  assert(success);
+
+  return result != Solver::False;
 }
