@@ -646,7 +646,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
 
 ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
                                       std::vector<ref<Expr>> &values) {
-  assert(suffixes.size() == values.size());
+  assert(!values.empty() && suffixes.size() == values.size());
 
   ref<Expr> summary = values[values.size() - 1];
   for (unsigned j = 1; j < values.size(); j++) {
@@ -741,12 +741,7 @@ void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,
         continue;
       }
 
-      /* the size can be actually less then the capacity */
-      Solver::Validity result;
-      ref<Expr> range = UltExpr::create(ConstantExpr::create(i, Expr::Int64), mo->getSizeExpr());
-      bool success = solver->evaluate(constraints, range, result, queryMetaData, true);
-      assert(success);
-      if (result == Solver::False) {
+      if (!isValidOffset(solver, mo, i)) {
         /* no need to check further... */
         continue;
       }
