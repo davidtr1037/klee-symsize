@@ -722,6 +722,16 @@ void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,
     ObjectState *wos = addressSpace.getWriteable(mo, os);
 
     for (unsigned i = 0; i < mo->capacity; i++) {
+      /* the size can be actually less then the capacity */
+      Solver::Validity result;
+      ref<Expr> range = UltExpr::create(ConstantExpr::create(i, Expr::Int64), mo->getSizeExpr());
+      bool success = solver->evaluate(constraints, range, result, queryMetaData);
+      assert(success);
+      if (result == Solver::False) {
+        /* no need to check further... */
+        continue;
+      }
+
       ref<Expr> v = wos->read8(i);
       if (!isa<ConstantExpr>(v)) {
         ref<Expr> x = simplifyArrayElement(mo, i, v, solver);
