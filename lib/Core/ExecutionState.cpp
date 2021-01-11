@@ -647,6 +647,11 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
     const ObjectState *os = merged->addressSpace.findObject(mo);
     assert(os && !os->readOnly && "objects mutated but not writable in merging state");
     ObjectState *wos = merged->addressSpace.getWriteable(mo, os);
+    /* TODO: more like knownInvalidOffset */
+    std::vector<unsigned> minInvalidOffset(states.size());
+    for (unsigned j = 0; j < minInvalidOffset.size(); j++) {
+      minInvalidOffset[j] = mo->capacity;
+    }
 
     for (unsigned i = 0; i < mo->capacity; i++) {
       std::vector<ref<Expr>> values;
@@ -656,7 +661,17 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
         const ObjectState *other = es->addressSpace.findObject(mo);
         assert(other);
         assert(wos->getObject()->capacity == other->getObject()->capacity);
-        if (!OptimizeArrayValuesPre || es->isValidOffset(loopHandler->solver, mo, i)) {
+
+        if (OptimizeArrayValuesPre) {
+          if (i < minInvalidOffset[j]) {
+            if (es->isValidOffset(loopHandler->solver, mo, i)) {
+              values.push_back(other->read8(i));
+              neededSuffixes.push_back(suffixes[j]);
+            } else {
+              minInvalidOffset[j] = i;
+            }
+          }
+        } else {
           values.push_back(other->read8(i));
           neededSuffixes.push_back(suffixes[j]);
         }
