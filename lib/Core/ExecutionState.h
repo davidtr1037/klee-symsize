@@ -223,6 +223,9 @@ public:
                                               ref<Expr> mergedConstraint,
                                               LoopHandler *loopHandler);
 
+  static bool canMerge(std::vector<ExecutionState *> &states,
+                       std::set<const MemoryObject*> &mutated);
+
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
                                std::vector<ref<Expr>> &values);
 

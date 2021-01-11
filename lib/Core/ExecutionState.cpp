@@ -502,58 +502,12 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
                                                      bool isComplete,
                                                      ref<Expr> mergedConstraint,
                                                      LoopHandler *loopHandler) {
-  assert(!states.empty());
-  ExecutionState *merged = states[0];
-
-  /* program counter */
-  for (ExecutionState *es : states) {
-    if (es->pc != merged->pc) {
-      return nullptr;
-    }
-  }
-
-  /* symbolics */
-  for (ExecutionState *es : states) {
-    if (es->symbolics != merged->symbolics) {
-      return nullptr;
-    }
-  }
-
-  /* stack */
-  for (ExecutionState *es : states) {
-    auto i = merged->stack.begin();
-    auto j = es->stack.begin();
-    while (i != merged->stack.end() && j != es->stack.end()) {
-      if (i->caller != j->caller || i->kf != j->kf) {
-        return nullptr;
-      }
-      ++i;
-      ++j;
-    }
-    if (i != merged->stack.end() || j != es->stack.end()) {
-      return nullptr;
-    }
-  }
-
-  /* address space */
   std::set<const MemoryObject*> mutated;
-  for (ExecutionState *es : states) {
-    auto ai = merged->addressSpace.objects.begin();
-    auto bi = es->addressSpace.objects.begin();
-    auto ae = merged->addressSpace.objects.end();
-    auto be = es->addressSpace.objects.end();
-    for (; ai != ae && bi != be; ++ai, ++bi) {
-      if (ai->first != bi->first) {
-        return nullptr;
-      }
-      if (ai->second.get() != bi->second.get()) {
-        mutated.insert(ai->first);
-      }
-    }
-    if (ai != ae || bi != be) {
-      return nullptr;
-    }
+  if (!canMerge(states, mutated)) {
+    return nullptr;
   }
+
+  ExecutionState *merged = states[0];
 
   /* compute suffix for each state */
   std::vector<ref<Expr>> suffixes;
@@ -642,6 +596,63 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   }
 
   return merged;
+}
+
+bool ExecutionState::canMerge(std::vector<ExecutionState *> &states,
+                              std::set<const MemoryObject*> &mutated) {
+  assert(!states.empty());
+  ExecutionState *merged = states[0];
+
+  /* program counter */
+  for (ExecutionState *es : states) {
+    if (es->pc != merged->pc) {
+      return false;
+    }
+  }
+
+  /* symbolics */
+  for (ExecutionState *es : states) {
+    if (es->symbolics != merged->symbolics) {
+      return false;
+    }
+  }
+
+  /* stack */
+  for (ExecutionState *es : states) {
+    auto i = merged->stack.begin();
+    auto j = es->stack.begin();
+    while (i != merged->stack.end() && j != es->stack.end()) {
+      if (i->caller != j->caller || i->kf != j->kf) {
+        return false;
+      }
+      ++i;
+      ++j;
+    }
+    if (i != merged->stack.end() || j != es->stack.end()) {
+      return false;
+    }
+  }
+
+  /* address space */
+  for (ExecutionState *es : states) {
+    auto ai = merged->addressSpace.objects.begin();
+    auto bi = es->addressSpace.objects.begin();
+    auto ae = merged->addressSpace.objects.end();
+    auto be = es->addressSpace.objects.end();
+    for (; ai != ae && bi != be; ++ai, ++bi) {
+      if (ai->first != bi->first) {
+        return false;
+      }
+      if (ai->second.get() != bi->second.get()) {
+        mutated.insert(ai->first);
+      }
+    }
+    if (ai != ae || bi != be) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
