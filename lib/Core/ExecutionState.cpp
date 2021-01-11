@@ -521,34 +521,10 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   }
 
   /* local vars */
-  mergeLocalVars(merged, states, suffixes);
+  mergeLocalVars(merged, states, suffixes, loopHandler);
 
   /* heap */
-  for (auto it = mutated.begin(), ie = mutated.end(); it != ie; ++it) {
-    const MemoryObject *mo = *it;
-    const ObjectState *os = merged->addressSpace.findObject(mo);
-    assert(os && !os->readOnly && "objects mutated but not writable in merging state");
-    ObjectState *wos = merged->addressSpace.getWriteable(mo, os);
-
-    for (unsigned i = 0; i < mo->capacity; i++) {
-      std::vector<ref<Expr>> values;
-      std::vector<ref<Expr>> neededSuffixes;
-      for (unsigned j = 0; j < states.size(); j++) {
-        ExecutionState *es = states[j];
-        const ObjectState *other = es->addressSpace.findObject(mo);
-        assert(other);
-        assert(wos->getObject()->capacity == other->getObject()->capacity);
-        if (!OptimizeArrayValuesPre || es->isValidOffset(loopHandler->solver, mo, i)) {
-          values.push_back(other->read8(i));
-          neededSuffixes.push_back(suffixes[j]);
-        }
-      }
-      if (!values.empty()) {
-        ref<Expr> v = mergeValues(neededSuffixes, values);
-        wos->write(i, v);
-      }
-    }
-  }
+  mergeHeap(merged, states, suffixes, mutated, loopHandler);
 
   /* path constraints */
   merged->constraints = ConstraintSet();
@@ -635,7 +611,8 @@ bool ExecutionState::canMerge(std::vector<ExecutionState *> &states,
 
 void ExecutionState::mergeLocalVars(ExecutionState *merged,
                                     std::vector<ExecutionState *> &states,
-                                    std::vector<ref<Expr>> &suffixes) {
+                                    std::vector<ref<Expr>> &suffixes,
+                                    LoopHandler *loopHandler) {
   for (unsigned i = 0; i < merged->stack.size(); i++) {
     StackFrame &sf = merged->stack[i];
     for (unsigned reg = 0; reg < sf.kf->numRegisters; reg++) {
@@ -657,6 +634,38 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
       }
       ref<Expr> &v = sf.locals[reg].value;
       v = mergeValues(suffixes, values);
+    }
+  }
+}
+
+void ExecutionState::mergeHeap(ExecutionState *merged,
+                               std::vector<ExecutionState *> &states,
+                               std::vector<ref<Expr>> &suffixes,
+                               std::set<const MemoryObject*> &mutated,
+                               LoopHandler *loopHandler) {
+  for (auto it = mutated.begin(), ie = mutated.end(); it != ie; ++it) {
+    const MemoryObject *mo = *it;
+    const ObjectState *os = merged->addressSpace.findObject(mo);
+    assert(os && !os->readOnly && "objects mutated but not writable in merging state");
+    ObjectState *wos = merged->addressSpace.getWriteable(mo, os);
+
+    for (unsigned i = 0; i < mo->capacity; i++) {
+      std::vector<ref<Expr>> values;
+      std::vector<ref<Expr>> neededSuffixes;
+      for (unsigned j = 0; j < states.size(); j++) {
+        ExecutionState *es = states[j];
+        const ObjectState *other = es->addressSpace.findObject(mo);
+        assert(other);
+        assert(wos->getObject()->capacity == other->getObject()->capacity);
+        if (!OptimizeArrayValuesPre || es->isValidOffset(loopHandler->solver, mo, i)) {
+          values.push_back(other->read8(i));
+          neededSuffixes.push_back(suffixes[j]);
+        }
+      }
+      if (!values.empty()) {
+        ref<Expr> v = mergeValues(neededSuffixes, values);
+        wos->write(i, v);
+      }
     }
   }
 }

@@ -228,7 +228,14 @@ public:
 
   static void mergeLocalVars(ExecutionState *merged,
                              std::vector<ExecutionState *> &states,
-                             std::vector<ref<Expr>> &suffixes);
+                             std::vector<ref<Expr>> &suffixes,
+                             LoopHandler *loopHandler);
+
+  static void mergeHeap(ExecutionState *merged,
+                        std::vector<ExecutionState *> &states,
+                        std::vector<ref<Expr>> &suffixes,
+                        std::set<const MemoryObject*> &mutated,
+                        LoopHandler *loopHandler);
 
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
                                std::vector<ref<Expr>> &values);
