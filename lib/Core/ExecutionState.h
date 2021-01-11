@@ -226,6 +226,10 @@ public:
   static bool canMerge(std::vector<ExecutionState *> &states,
                        std::set<const MemoryObject*> &mutated);
 
+  static void mergeLocalVars(ExecutionState *merged,
+                             std::vector<ExecutionState *> &states,
+                             std::vector<ref<Expr>> &suffixes);
+
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
                                std::vector<ref<Expr>> &values);
 

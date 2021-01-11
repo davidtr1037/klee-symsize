@@ -521,29 +521,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   }
 
   /* local vars */
-  for (unsigned i = 0; i < merged->stack.size(); i++) {
-    StackFrame &sf = merged->stack[i];
-    for (unsigned reg = 0; reg < sf.kf->numRegisters; reg++) {
-      bool ignore = false;
-      for (ExecutionState *es : states) {
-        ref<Expr> v = es->stack[i].locals[reg].value;
-        if (v.isNull()) {
-          ignore = true;
-          break;
-        }
-      }
-      if (ignore) {
-        continue;
-      }
-
-      std::vector<ref<Expr>> values;
-      for (ExecutionState *es : states) {
-        values.push_back(es->stack[i].locals[reg].value);
-      }
-      ref<Expr> &v = sf.locals[reg].value;
-      v = mergeValues(suffixes, values);
-    }
-  }
+  mergeLocalVars(merged, states, suffixes);
 
   /* heap */
   for (auto it = mutated.begin(), ie = mutated.end(); it != ie; ++it) {
@@ -653,6 +631,34 @@ bool ExecutionState::canMerge(std::vector<ExecutionState *> &states,
   }
 
   return true;
+}
+
+void ExecutionState::mergeLocalVars(ExecutionState *merged,
+                                    std::vector<ExecutionState *> &states,
+                                    std::vector<ref<Expr>> &suffixes) {
+  for (unsigned i = 0; i < merged->stack.size(); i++) {
+    StackFrame &sf = merged->stack[i];
+    for (unsigned reg = 0; reg < sf.kf->numRegisters; reg++) {
+      bool ignore = false;
+      for (ExecutionState *es : states) {
+        ref<Expr> v = es->stack[i].locals[reg].value;
+        if (v.isNull()) {
+          ignore = true;
+          break;
+        }
+      }
+      if (ignore) {
+        continue;
+      }
+
+      std::vector<ref<Expr>> values;
+      for (ExecutionState *es : states) {
+        values.push_back(es->stack[i].locals[reg].value);
+      }
+      ref<Expr> &v = sf.locals[reg].value;
+      v = mergeValues(suffixes, values);
+    }
+  }
 }
 
 ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
