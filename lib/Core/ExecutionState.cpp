@@ -643,8 +643,7 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
                                std::vector<ref<Expr>> &suffixes,
                                std::set<const MemoryObject*> &mutated,
                                LoopHandler *loopHandler) {
-  for (auto it = mutated.begin(), ie = mutated.end(); it != ie; ++it) {
-    const MemoryObject *mo = *it;
+  for (const MemoryObject *mo : mutated) {
     const ObjectState *os = merged->addressSpace.findObject(mo);
     assert(os && !os->readOnly && "objects mutated but not writable in merging state");
     ObjectState *wos = merged->addressSpace.getWriteable(mo, os);
