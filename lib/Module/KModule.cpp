@@ -405,6 +405,15 @@ void KModule::visitLoop(Function &f, Loop *loop) {
 }
 
 bool KModule::isSupportedLoop(Loop *loop) {
+  std::set<std::string> bl;
+  //bl.insert("png_handle_tEXt");
+  //bl.insert("strlen");
+  for (std::string s : bl) {
+    if (loop->getHeader()->getParent()->getName() == s) {
+      return false;
+    }
+  }
+
   /* TODO: remove this */
   std::set<std::string> wl;
   wl.insert("asn1_get_length_der");
