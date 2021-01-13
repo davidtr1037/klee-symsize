@@ -883,6 +883,14 @@ void Executor::branch(ExecutionState &state,
 
   for (ref<Expr> c : conditions) {
     dumpForkStats(state, c);
+    if (UseLoopMerge) {
+      /* if one of the conditions is tainted, that's enough... */
+      if (state.stack.back().isExecutingLoop && state.isTaintedExpr(c)) {
+        if (state.loopHandler.isNull()) {
+          setLoopHandler(state);
+        }
+      }
+    }
   }
 
   if (!branchingPermitted(state)) {
