@@ -881,6 +881,10 @@ void Executor::branch(ExecutionState &state,
   unsigned N = conditions.size();
   assert(N);
 
+  for (ref<Expr> c : conditions) {
+    dumpForkStats(state, c);
+  }
+
   if (!branchingPermitted(state)) {
     unsigned next = theRNG.getInt32() % N;
     for (unsigned i=0; i<N; ++i) {
@@ -1096,27 +1100,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     return StatePair(0, &current);
   } else {
-    if (DebugForks || DebugLoopForks || DebugTaint || CollectLoopStats) {
-      Instruction *lastInst;
-      const InstructionInfo &info = getLastNonKleeInternalInstruction(current, &lastInst);
-      Function *f = current.stack.back().kf->function;
-      if (DebugForks) {
-        errs() << "FORK " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
-        condition->dump();
-      }
-      if (DebugTaint && current.isTaintedExpr(condition)) {
-        errs() << "TAINT " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
-      }
-
-      if (current.stack.back().isExecutingLoop) {
-        if (DebugLoopForks) {
-          errs() << "LOOP FORK " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
-        }
-        if (CollectLoopStats && current.isTaintedExpr(condition)) {
-          collectLoopStats(current);
-        }
-      }
-    }
+    dumpForkStats(current, condition);
 
     if (UseLoopMerge) {
       if (current.stack.back().isExecutingLoop && current.isTaintedExpr(condition)) {
@@ -4378,6 +4362,31 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   }
 
   return capacity;
+}
+
+void Executor::dumpForkStats(ExecutionState &state, ref<Expr> condition) {
+  if (DebugForks || DebugLoopForks || DebugTaint || CollectLoopStats) {
+    Instruction *lastInst;
+    const InstructionInfo &info = getLastNonKleeInternalInstruction(state, &lastInst);
+    Function *f = state.stack.back().kf->function;
+    if (DebugForks) {
+      errs() << "FORK " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
+      condition->dump();
+    }
+    if (DebugTaint && state.isTaintedExpr(condition)) {
+      errs() << "TAINT " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
+    }
+
+    if (state.stack.back().isExecutingLoop) {
+      if (DebugLoopForks) {
+        errs() << "LOOP FORK " << info.file << ":" << info.line << " (" << f->getName() << ")\n";
+        errs() << state.isTaintedExpr(condition) << " " << *condition << "\n";;
+      }
+      if (CollectLoopStats && state.isTaintedExpr(condition)) {
+        collectLoopStats(state);
+      }
+    }
+  }
 }
 
 void Executor::setTaint(ExecutionState &state, ref<Expr> size) {

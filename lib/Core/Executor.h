@@ -465,6 +465,8 @@ private:
 
   size_t getCapacity(ExecutionState &state, ref<Expr> size);
 
+  void dumpForkStats(ExecutionState &state, ref<Expr> condition);
+
   void setTaint(ExecutionState &state, ref<Expr> size);
 
   void collectLoopStats(ExecutionState &state);
