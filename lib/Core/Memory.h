@@ -228,6 +228,8 @@ private:
   // mutable because we may need flush during read of const
   mutable UpdateList updates;
 
+  mutable unsigned actualBound;
+
 public:
   unsigned size;
 
@@ -276,6 +278,10 @@ public:
   void flushToConcreteStore(TimingSolver *solver,
                             const ExecutionState &state) const;
 
+  unsigned getActualBound() const {
+    return actualBound;
+  }
+
 private:
   const UpdateList &getUpdates() const;
 
@@ -303,6 +309,9 @@ private:
   void setKnownSymbolic(unsigned offset, Expr *value);
 
   ArrayCache *getArrayCache() const;
+
+  void onConcreteAccess(unsigned offset) const;
+  void onSymbolicAccess(unsigned offset) const;
 };
   
 } // End klee namespace

@@ -47,6 +47,12 @@ cl::opt<bool> OptimizeArrayValuesPost(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
+cl::opt<bool> OptimizeArrayValuesByTracking(
+    "optimize-array-values-by-tracking", cl::init(false),
+    cl::desc(""),
+    cl::cat(MergeCat));
+
+/* TODO: can't be used with -validate-merge */
 cl::opt<bool> OptimizeArrayValuesPre(
     "optimize-array-values-pre", cl::init(false),
     cl::desc(""),
@@ -662,7 +668,13 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
         assert(other);
         assert(wos->getObject()->capacity == other->getObject()->capacity);
 
-        if (OptimizeArrayValuesPre) {
+        if (OptimizeArrayValuesByTracking) {
+          /* TODO: if never accessed, we can just ignore? */
+          if (i < other->getActualBound()) {
+            values.push_back(other->read8(i));
+            neededSuffixes.push_back(suffixes[j]);
+          }
+        } else if (OptimizeArrayValuesPre) {
           if (i < minInvalidOffset[j]) {
             if (es->isValidOffset(loopHandler->solver, mo, i)) {
               values.push_back(other->read8(i));

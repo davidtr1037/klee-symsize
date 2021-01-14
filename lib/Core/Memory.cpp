@@ -83,6 +83,7 @@ ObjectState::ObjectState(const MemoryObject *mo)
     flushMask(0),
     knownSymbolics(0),
     updates(0, 0),
+    actualBound(0),
     size(mo->capacity),
     readOnly(false) {
   if (!UseConstantArrays) {
@@ -103,6 +104,7 @@ ObjectState::ObjectState(const MemoryObject *mo, const Array *array)
     flushMask(0),
     knownSymbolics(0),
     updates(array, 0),
+    actualBound(0),
     size(mo->capacity),
     readOnly(false) {
   makeSymbolic();
@@ -117,6 +119,7 @@ ObjectState::ObjectState(const ObjectState &os)
     flushMask(os.flushMask ? new BitArray(*os.flushMask, os.size) : 0),
     knownSymbolics(0),
     updates(os.updates),
+    actualBound(os.actualBound),
     size(os.size),
     readOnly(false) {
   assert(!os.readOnly && "no need to copy read only object?");
@@ -139,6 +142,19 @@ ObjectState::~ObjectState() {
 ArrayCache *ObjectState::getArrayCache() const {
   assert(!object.isNull() && "object was NULL");
   return object->parent->getArrayCache();
+}
+
+void ObjectState::onConcreteAccess(unsigned offset) const {
+  unsigned bound = offset + 1;
+  if (bound > actualBound) {
+    actualBound = bound;
+  }
+}
+
+/* TODO: try to use the solver */
+void ObjectState::onSymbolicAccess(unsigned offset) const {
+  /* conservatively set to the max value (capacity) */
+  actualBound = size;
 }
 
 /***/
@@ -361,6 +377,7 @@ void ObjectState::setKnownSymbolic(unsigned offset,
 /***/
 
 ref<Expr> ObjectState::read8(unsigned offset) const {
+  onConcreteAccess(offset);
   if (isByteConcrete(offset)) {
     return ConstantExpr::create(concreteStore[offset], Expr::Int8);
   } else if (isByteKnownSymbolic(offset)) {
@@ -391,6 +408,7 @@ ref<Expr> ObjectState::read8(ref<Expr> offset) const {
 }
 
 void ObjectState::write8(unsigned offset, uint8_t value) {
+  onConcreteAccess(offset);
   //assert(read_only == false && "writing to read-only object!");
   concreteStore[offset] = value;
   setKnownSymbolic(offset, 0);
@@ -400,6 +418,7 @@ void ObjectState::write8(unsigned offset, uint8_t value) {
 }
 
 void ObjectState::write8(unsigned offset, ref<Expr> value) {
+  onConcreteAccess(offset);
   // can happen when ExtractExpr special cases
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(value)) {
     write8(offset, (uint8_t) CE->getZExtValue(8));
