@@ -53,7 +53,6 @@ cl::opt<bool> OptimizeArrayValuesByTracking(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
-/* TODO: rename it */
 cl::opt<bool> OptimizeArrayValuesUsingSolver(
     "optimize-array-values-using-solver", cl::init(false),
     cl::desc(""),
@@ -756,9 +755,9 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
       bool isEqual;
       SolverQueryMetaData meta;
       assert(solver->mustBeTrue(sa->constraints,
-                                          EqExpr::create(v1, v2),
-                                          isEqual,
-                                          meta));
+                                EqExpr::create(v1, v2),
+                                isEqual,
+                                meta));
       if (!isEqual) {
         return false;
       }
@@ -776,9 +775,9 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
       bool isEqual;
       SolverQueryMetaData meta;
       assert(solver->mustBeTrue(sa->constraints,
-                                          EqExpr::create(v1, v2),
-                                          isEqual,
-                                          meta));
+                                EqExpr::create(v1, v2),
+                                isEqual,
+                                meta));
       if (!isEqual) {
         return false;
       }
