@@ -54,8 +54,8 @@ cl::opt<bool> OptimizeArrayValuesByTracking(
 
 /* TODO: can't be used with -validate-merge */
 /* TODO: rename it */
-cl::opt<bool> OptimizeArrayValuesPre(
-    "optimize-array-values-pre", cl::init(false),
+cl::opt<bool> OptimizeArrayValuesUsingSolver(
+    "optimize-array-values-using-solver", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
 }
@@ -675,7 +675,7 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
             values.push_back(other->read8(i));
             neededSuffixes.push_back(suffixes[j]);
           }
-        } else if (OptimizeArrayValuesPre) {
+        } else if (OptimizeArrayValuesUsingSolver) {
           if (i < minInvalidOffset[j]) {
             if (es->isValidOffset(loopHandler->solver, mo, i)) {
               values.push_back(other->read8(i));
