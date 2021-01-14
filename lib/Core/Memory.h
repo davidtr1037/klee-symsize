@@ -282,6 +282,10 @@ public:
     return actualBound;
   }
 
+  unsigned setActualBound(unsigned bound) const {
+    return actualBound = bound;
+  }
+
 private:
   const UpdateList &getUpdates() const;
 

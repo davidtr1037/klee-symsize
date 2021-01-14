@@ -692,6 +692,13 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
       if (!values.empty()) {
         ref<Expr> v = mergeValues(neededSuffixes, values);
         wos->write(i, v);
+        /* take the maximum bound */
+        for (ExecutionState *es : states) {
+          const ObjectState *os = es->addressSpace.findObject(mo);
+          if (os->getActualBound() > wos->getActualBound()) {
+            wos->setActualBound(os->getActualBound());
+          }
+        }
       }
     }
   }
