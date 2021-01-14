@@ -41,9 +41,8 @@ cl::opt<bool> DebugLogStateMerge(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
-/* TODO: rename it */
-cl::opt<bool> OptimizeArrayValuesPost(
-    "optimize-array-values-post", cl::init(false),
+cl::opt<bool> OptimizeArrayValuesByITERewrite(
+    "optimize-array-values-by-ite-rewrite", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
 
@@ -553,7 +552,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     m.addConstraint(orExpr);
   }
 
-  if (OptimizeArrayValuesPost) {
+  if (OptimizeArrayValuesByITERewrite) {
     merged->optimizeArrayValues(mutated, loopHandler->solver);
   }
 
