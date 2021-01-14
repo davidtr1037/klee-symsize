@@ -769,12 +769,24 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
     ref<ObjectState> os = i.second;
     const ObjectState *otherOS = sb->addressSpace.findObject(mo);
     for (unsigned i = 0; i < mo->capacity; i++) {
+      bool inRange = false;
+      SolverQueryMetaData meta;
+      ref<Expr> rangeCond = UltExpr::create(ConstantExpr::create(i, Expr::Int64), mo->getSizeExpr());
+      assert(solver->mayBeTrue(sa->constraints,
+                               rangeCond,
+                               inRange,
+                               meta));
+      if (!inRange) {
+        continue;
+      }
+
       ref<Expr> v1 = os->read8(i);
       ref<Expr> v2 = otherOS->read8(i);
 
       bool isEqual;
-      SolverQueryMetaData meta;
-      assert(solver->mustBeTrue(sa->constraints,
+      ConstraintSet tmp(sa->constraints);
+      tmp.push_back(rangeCond);
+      assert(solver->mustBeTrue(tmp,
                                 EqExpr::create(v1, v2),
                                 isEqual,
                                 meta));
