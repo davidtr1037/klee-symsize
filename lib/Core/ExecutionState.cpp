@@ -41,8 +41,8 @@ cl::opt<bool> DebugLogStateMerge(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
-cl::opt<bool> OptimizeArrayValuesByITERewrite(
-    "optimize-array-values-by-ite-rewrite", cl::init(false),
+cl::opt<bool> OptimizeArrayValuesUsingITERewrite(
+    "optimize-array-values-using-ite-rewrite", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
 
@@ -551,7 +551,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     m.addConstraint(orExpr);
   }
 
-  if (OptimizeArrayValuesByITERewrite) {
+  if (OptimizeArrayValuesUsingITERewrite) {
     merged->optimizeArrayValues(mutated, loopHandler->solver);
   }
 
@@ -668,19 +668,21 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
         assert(other);
         assert(wos->getObject()->capacity == other->getObject()->capacity);
 
-        if (OptimizeArrayValuesByTracking) {
-          /* TODO: if never accessed, we can just ignore? */
-          if (i < other->getActualBound()) {
-            values.push_back(other->read8(i));
-            neededSuffixes.push_back(suffixes[j]);
-          }
-        } else if (OptimizeArrayValuesUsingSolver) {
-          if (i < minInvalidOffset[j]) {
-            if (es->isValidOffset(loopHandler->solver, mo, i)) {
+        if (!mo->hasFixedSize() && shouldOptimizeArrayValues()) {
+          if (OptimizeArrayValuesByTracking) {
+            /* TODO: if never accessed, we can just ignore? */
+            if (i < other->getActualBound()) {
               values.push_back(other->read8(i));
               neededSuffixes.push_back(suffixes[j]);
-            } else {
-              minInvalidOffset[j] = i;
+            }
+          } else if (OptimizeArrayValuesUsingSolver) {
+            if (i < minInvalidOffset[j]) {
+              if (es->isValidOffset(loopHandler->solver, mo, i)) {
+                values.push_back(other->read8(i));
+                neededSuffixes.push_back(suffixes[j]);
+              } else {
+                minInvalidOffset[j] = i;
+              }
             }
           }
         } else {
@@ -797,6 +799,12 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
   }
 
   return true;
+}
+
+bool ExecutionState::shouldOptimizeArrayValues() {
+  return OptimizeArrayValuesByTracking ||
+         OptimizeArrayValuesUsingSolver ||
+         OptimizeArrayValuesUsingITERewrite;
 }
 
 void ExecutionState::optimizeArrayValues(std::set<const MemoryObject*> mutated,

@@ -244,6 +244,8 @@ public:
                        const ExecutionState *sa,
                        const ExecutionState *sb);
 
+  static bool shouldOptimizeArrayValues();
+
   void optimizeArrayValues(std::set<const MemoryObject*> mutated,
                            TimingSolver *solver);
 
