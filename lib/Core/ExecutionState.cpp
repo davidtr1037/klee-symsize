@@ -41,6 +41,7 @@ cl::opt<bool> DebugLogStateMerge(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
+/* TODO: rename it */
 cl::opt<bool> OptimizeArrayValuesPost(
     "optimize-array-values-post", cl::init(false),
     cl::desc(""),
@@ -53,6 +54,7 @@ cl::opt<bool> OptimizeArrayValuesByTracking(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
+/* TODO: rename it */
 cl::opt<bool> OptimizeArrayValuesPre(
     "optimize-array-values-pre", cl::init(false),
     cl::desc(""),
