@@ -2,7 +2,7 @@
 // RUN: rm -rf %t.klee-out
 // RUN: %klee --output-dir=%t.klee-out -libc=uclibc --use-loop-merge -use-optimized-merge=1 -allocate-sym-size -capacity=10 --search=dfs %t.bc 2>&1 | FileCheck %s
 
-// CHECK: KLEE: merged 11 states (early = 0)
+// CHECK: KLEE: merged 11 states (complete = 1)
 // CHECK: KLEE: done: unmerged completed paths = 1
 
 #include <stdio.h>
