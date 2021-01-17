@@ -653,12 +653,14 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
     const ObjectState *os = merged->addressSpace.findObject(mo);
     assert(os && !os->readOnly && "objects mutated but not writable in merging state");
     ObjectState *wos = merged->addressSpace.getWriteable(mo, os);
+
     /* TODO: more like knownInvalidOffset */
     std::vector<unsigned> minInvalidOffset(states.size());
     for (unsigned j = 0; j < minInvalidOffset.size(); j++) {
       minInvalidOffset[j] = mo->capacity;
     }
 
+    std::vector<ref<Expr>> toWrite;
     for (unsigned i = 0; i < mo->capacity; i++) {
       std::vector<ref<Expr>> values;
       std::vector<ref<Expr>> neededSuffixes;
@@ -670,10 +672,19 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
 
         if (!mo->hasFixedSize() && shouldOptimizeArrayValues()) {
           if (OptimizeArrayValuesByTracking) {
-            /* TODO: if never accessed, we can just ignore? */
             if (i < other->getActualBound()) {
               values.push_back(other->read8(i));
               neededSuffixes.push_back(suffixes[j]);
+            } else {
+              /* the offset may be still valid */
+              if (i < minInvalidOffset[j]) {
+                if (es->isValidOffset(loopHandler->solver, mo, i)) {
+                  values.push_back(other->read8(i));
+                  neededSuffixes.push_back(suffixes[j]);
+                } else {
+                  minInvalidOffset[j] = i;
+                }
+              }
             }
           } else if (OptimizeArrayValuesUsingSolver) {
             if (i < minInvalidOffset[j]) {
@@ -690,18 +701,25 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
           neededSuffixes.push_back(suffixes[j]);
         }
       }
+
       if (!values.empty()) {
         ref<Expr> v = mergeValues(neededSuffixes, values);
-        wos->write(i, v);
-        /* take the maximum bound */
-        for (ExecutionState *es : states) {
-          const ObjectState *os = es->addressSpace.findObject(mo);
-          if (os->getActualBound() > wos->getActualBound()) {
-            wos->setActualBound(os->getActualBound());
-          }
-        }
+        toWrite.push_back(v);
+      } else {
+        toWrite.push_back(nullptr);
       }
     }
+
+    assert(toWrite.size() == mo->capacity);
+    for (unsigned i = 0; i < toWrite.size(); i++) {
+      ref<Expr> v = toWrite[i];
+      if (!v.isNull()) {
+        wos->write(i, v);
+      }
+    }
+
+    /* TODO: is correct? */
+    wos->setActualBound(0);
   }
 }
 
