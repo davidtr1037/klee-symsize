@@ -152,7 +152,7 @@ void ObjectState::onConcreteAccess(unsigned offset) const {
 }
 
 /* TODO: try to use the solver */
-void ObjectState::onSymbolicAccess(unsigned offset) const {
+void ObjectState::onSymbolicAccess(ref<Expr> offset) const {
   /* conservatively set to the max value (capacity) */
   actualBound = size;
 }
@@ -391,6 +391,7 @@ ref<Expr> ObjectState::read8(unsigned offset) const {
 }
 
 ref<Expr> ObjectState::read8(ref<Expr> offset) const {
+  onSymbolicAccess(offset);
   assert(!isa<ConstantExpr>(offset) && "constant offset passed to symbolic read8");
   unsigned base, size;
   fastRangeCheckOffset(offset, &base, &size);
@@ -431,6 +432,7 @@ void ObjectState::write8(unsigned offset, ref<Expr> value) {
 }
 
 void ObjectState::write8(ref<Expr> offset, ref<Expr> value) {
+  onSymbolicAccess(offset);
   assert(!isa<ConstantExpr>(offset) && "constant offset passed to symbolic write8");
   unsigned base, size;
   fastRangeCheckOffset(offset, &base, &size);

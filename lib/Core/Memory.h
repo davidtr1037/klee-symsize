@@ -282,8 +282,9 @@ public:
     return actualBound;
   }
 
-  unsigned setActualBound(unsigned bound) const {
-    return actualBound = bound;
+  void setActualBound(unsigned bound) const {
+    /* TODO: validate that there were no symbolic-offset writes */
+    actualBound = bound;
   }
 
 private:
@@ -315,7 +316,7 @@ private:
   ArrayCache *getArrayCache() const;
 
   void onConcreteAccess(unsigned offset) const;
-  void onSymbolicAccess(unsigned offset) const;
+  void onSymbolicAccess(ref<Expr> offset) const;
 };
   
 } // End klee namespace
