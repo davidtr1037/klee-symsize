@@ -620,7 +620,7 @@ private:
       }
     }
 
-    size += index->size + 1;
+    size = index->size + 1;
     for (const UpdateNode *un = updates.head.get(); un; un = un->next.get()) {
       size += un->index->size + un->value->size;
     }
@@ -746,6 +746,7 @@ private:
   ConcatExpr(const ref<Expr> &l, const ref<Expr> &r) : left(l), right(r) {
     width = l->getWidth() + r->getWidth();
     isTainted = l->isTainted || r->isTainted;
+    size = l->size + r->size + 1;
   }
 
 public:
@@ -809,7 +810,9 @@ public:
 
 private:
   ExtractExpr(const ref<Expr> &e, unsigned b, Width w) 
-    : expr(e),offset(b),width(w) {}
+    : expr(e),offset(b),width(w) {
+    size = e->size + 1;
+  }
 
 public:
   static bool classof(const Expr *E) {
@@ -857,7 +860,9 @@ public:
   static bool classof(const NotExpr *) { return true; }
 
 private:
-  NotExpr(const ref<Expr> &e) : expr(e) {}
+  NotExpr(const ref<Expr> &e) : expr(e) {
+    size = e->size + 1;
+  }
 
 protected:
   virtual int compareContents(const Expr &b) const {
@@ -878,6 +883,7 @@ public:
 public:
   CastExpr(const ref<Expr> &e, Width w) : src(e), width(w) {
     isTainted = e->isTainted;
+    size = e->size + 1;
   }
 
   Width getWidth() const { return width; }
