@@ -204,7 +204,7 @@ protected:
   virtual int compareContents(const Expr &b) const = 0;
 
 public:
-  Expr() { Expr::count++; isTainted = false; }
+  Expr() { Expr::count++; isTainted = false; size = 1; }
   virtual ~Expr() { Expr::count--; } 
 
   virtual Kind getKind() const = 0;
@@ -286,6 +286,7 @@ public:
   static bool classof(const Expr *) { return true; }
 
   bool isTainted;
+  uint64_t size;
 
 private:
   typedef llvm::DenseSet<std::pair<const Expr *, const Expr *> > ExprEquivSet;
@@ -384,6 +385,7 @@ public:
 protected:
   BinaryExpr(const ref<Expr> &l, const ref<Expr> &r) : left(l), right(r) {
     isTainted = l->isTainted || r->isTainted;
+    size = l->size + r->size + 1;
   }
 
 public:
@@ -437,6 +439,7 @@ public:
 private:
   NotOptimizedExpr(const ref<Expr> &_src) : src(_src) {
     isTainted = src->isTainted;
+    size = src->size + 1;
   }
 
 protected:
@@ -616,6 +619,11 @@ private:
         }
       }
     }
+
+    size += index->size + 1;
+    for (const UpdateNode *un = updates.head.get(); un; un = un->next.get()) {
+      size += un->index->size + un->value->size;
+    }
   }
 
 public:
@@ -671,7 +679,10 @@ public:
 
 private:
   SelectExpr(const ref<Expr> &c, const ref<Expr> &t, const ref<Expr> &f) 
-    : cond(c), trueExpr(t), falseExpr(f) {}
+    : cond(c), trueExpr(t), falseExpr(f) {
+    /* TODO: update isTainted? */
+    size = c->size + t->size + f->size + 1;
+  }
 
 public:
   static bool classof(const Expr *E) {
