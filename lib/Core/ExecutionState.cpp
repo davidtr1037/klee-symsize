@@ -57,6 +57,11 @@ cl::opt<bool> OptimizeArrayValuesUsingSolver(
     "optimize-array-values-using-solver", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
+
+cl::opt<bool> OptimizeITEUsingExecTree(
+    "optimize-ite-using-exec-tree", cl::init(false),
+    cl::desc(""),
+    cl::cat(MergeCat));
 }
 
 /***/
@@ -639,7 +644,11 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
         values.push_back(es->stack[i].locals[reg].value);
       }
       ref<Expr> &v = sf.locals[reg].value;
-      v = mergeValues(suffixes, values);
+      if (OptimizeITEUsingExecTree) {
+        v = mergeValuesUsingExecTree(states, values, loopHandler);
+      } else {
+        v = mergeValues(suffixes, values);
+      }
     }
   }
 }
@@ -735,6 +744,40 @@ ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
   }
 
   return summary;
+}
+
+ref<Expr> ExecutionState::mergeValuesUsingExecTree(std::vector<ExecutionState *> &states,
+                                                   std::vector<ref<Expr>> &values,
+                                                   LoopHandler *loopHandler) {
+  ExecTreeNode *n = loopHandler->tree.root;
+  return mergeValuesFromNode(n, states, values);
+}
+
+ref<Expr> ExecutionState::mergeValuesFromNode(ExecTreeNode *n,
+                                              std::vector<ExecutionState *> &states,
+                                              std::vector<ref<Expr>> &values) {
+  if (n->isLeaf()) {
+    return getValueByStateID(n->stateID, states, values);
+  }
+
+  ref<Expr> lv = mergeValuesFromNode(n->left, states, values);
+  ref<Expr> rv = mergeValuesFromNode(n->right, states, values);
+  /* TODO: left/right or right/left? */
+  ref<Expr> ite = SelectExpr::create(n->left->e, lv, rv);
+  return ite;
+}
+
+ref<Expr> ExecutionState::getValueByStateID(uint32_t stateID,
+                                            std::vector<ExecutionState *> &states,
+                                            std::vector<ref<Expr>> &values) {
+  for (unsigned i = 0; i < states.size(); i++) {
+    if (states[i]->getID() == stateID) {
+      return values[i];
+    }
+  }
+
+  assert(0);
+  return nullptr;
 }
 
 bool ExecutionState::areEquiv(TimingSolver *solver,

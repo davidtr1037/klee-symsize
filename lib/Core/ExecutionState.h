@@ -240,6 +240,18 @@ public:
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
                                std::vector<ref<Expr>> &values);
 
+  static ref<Expr> mergeValuesUsingExecTree(std::vector<ExecutionState *> &states,
+                                            std::vector<ref<Expr>> &values,
+                                            LoopHandler *loopHandler);
+
+  static ref<Expr> mergeValuesFromNode(ExecTreeNode *n,
+                                       std::vector<ExecutionState *> &states,
+                                       std::vector<ref<Expr>> &values);
+
+  static ref<Expr> getValueByStateID(uint32_t stateID,
+                                     std::vector<ExecutionState *> &states,
+                                     std::vector<ref<Expr>> &values);
+
   static bool areEquiv(TimingSolver *solver,
                        const ExecutionState *sa,
                        const ExecutionState *sb);

@@ -1126,6 +1126,17 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     falseState = trueState->branch();
     addedStates.push_back(falseState);
 
+    if (UseLoopMerge) {
+      if (!current.loopHandler.isNull()) {
+        /* TODO: only if the option is enabled */
+        /* TODO: handle switch as well */
+        current.loopHandler->tree.extend(current.getID(),
+                                         condition,
+                                         trueState->getID(),
+                                         falseState->getID());
+      }
+    }
+
     if (it != seedMap.end()) {
       std::vector<SeedInfo> seeds = it->second;
       it->second.clear();

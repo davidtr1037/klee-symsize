@@ -179,7 +179,8 @@ LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
       earlyTerminated(0),
       executor(_executor),
       solver(_executor->solver),
-      loop(loop) {
+      loop(loop),
+      tree(es->getID()) {
   assert(loop);
   addOpenState(es);
   for (ref<Expr> e : es->constraints) {

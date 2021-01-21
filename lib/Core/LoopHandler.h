@@ -2,6 +2,7 @@
 #define KLEE_LOOPHANDLER_H
 
 #include "TimingSolver.h"
+#include "ExecTree.h"
 
 #include "klee/ADT/Ref.h"
 #include "klee/Expr/Constraints.h"
@@ -69,6 +70,8 @@ public:
   llvm::Loop *loop;
 
   ConstraintSet initialConstraints;
+
+  ExecTree tree;
 };
 
 }
