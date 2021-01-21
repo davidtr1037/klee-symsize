@@ -12,6 +12,7 @@ klee_add_component(kleeCore
   CallPathManager.cpp
   Context.cpp
   CoreStats.cpp
+  ExecTree.cpp
   ExecutionState.cpp
   Executor.cpp
   ExecutorUtil.cpp
