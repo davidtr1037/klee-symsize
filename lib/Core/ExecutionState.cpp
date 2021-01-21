@@ -640,12 +640,16 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
       }
 
       std::vector<ref<Expr>> values;
+      State2Value valuesMap;
       for (ExecutionState *es : states) {
-        values.push_back(es->stack[i].locals[reg].value);
+        ref<Expr> e = es->stack[i].locals[reg].value;
+        values.push_back(e);
+        valuesMap[es->getID()] = e;
       }
+
       ref<Expr> &v = sf.locals[reg].value;
       if (OptimizeITEUsingExecTree) {
-        v = mergeValuesUsingExecTree(states, values, loopHandler);
+        v = mergeValuesUsingExecTree(valuesMap, loopHandler);
       } else {
         v = mergeValues(suffixes, values);
       }
@@ -746,38 +750,24 @@ ref<Expr> ExecutionState::mergeValues(std::vector<ref<Expr>> &suffixes,
   return summary;
 }
 
-ref<Expr> ExecutionState::mergeValuesUsingExecTree(std::vector<ExecutionState *> &states,
-                                                   std::vector<ref<Expr>> &values,
+ref<Expr> ExecutionState::mergeValuesUsingExecTree(State2Value &valuesMap,
                                                    LoopHandler *loopHandler) {
   ExecTreeNode *n = loopHandler->tree.root;
-  return mergeValuesFromNode(n, states, values);
+  return mergeValuesFromNode(n, valuesMap);
 }
 
 ref<Expr> ExecutionState::mergeValuesFromNode(ExecTreeNode *n,
-                                              std::vector<ExecutionState *> &states,
-                                              std::vector<ref<Expr>> &values) {
+                                              State2Value &valuesMap) {
   if (n->isLeaf()) {
-    return getValueByStateID(n->stateID, states, values);
+    auto i = valuesMap.find(n->stateID);
+    assert(i != valuesMap.end());
+    return i->second;
   }
 
-  ref<Expr> lv = mergeValuesFromNode(n->left, states, values);
-  ref<Expr> rv = mergeValuesFromNode(n->right, states, values);
   /* TODO: left/right or right/left? */
-  ref<Expr> ite = SelectExpr::create(n->left->e, lv, rv);
-  return ite;
-}
-
-ref<Expr> ExecutionState::getValueByStateID(uint32_t stateID,
-                                            std::vector<ExecutionState *> &states,
-                                            std::vector<ref<Expr>> &values) {
-  for (unsigned i = 0; i < states.size(); i++) {
-    if (states[i]->getID() == stateID) {
-      return values[i];
-    }
-  }
-
-  assert(0);
-  return nullptr;
+  ref<Expr> lv = mergeValuesFromNode(n->left, valuesMap);
+  ref<Expr> rv = mergeValuesFromNode(n->right, valuesMap);
+  return SelectExpr::create(n->left->e, lv, rv);
 }
 
 bool ExecutionState::areEquiv(TimingSolver *solver,

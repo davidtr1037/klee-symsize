@@ -81,6 +81,7 @@ struct StackFrame {
 /// @brief ExecutionState representing a path under exploration
 class ExecutionState {
   typedef std::vector<ref<Expr>> ExprSet;
+  typedef std::map<std::uint32_t, ref<Expr>> State2Value;
 
 #ifdef KLEE_UNITTEST
 public:
@@ -240,17 +241,11 @@ public:
   static ref<Expr> mergeValues(std::vector<ref<Expr>> &suffixes,
                                std::vector<ref<Expr>> &values);
 
-  static ref<Expr> mergeValuesUsingExecTree(std::vector<ExecutionState *> &states,
-                                            std::vector<ref<Expr>> &values,
+  static ref<Expr> mergeValuesUsingExecTree(State2Value &valuesMap,
                                             LoopHandler *loopHandler);
 
   static ref<Expr> mergeValuesFromNode(ExecTreeNode *n,
-                                       std::vector<ExecutionState *> &states,
-                                       std::vector<ref<Expr>> &values);
-
-  static ref<Expr> getValueByStateID(uint32_t stateID,
-                                     std::vector<ExecutionState *> &states,
-                                     std::vector<ref<Expr>> &values);
+                                       State2Value &valuesMap);
 
   static bool areEquiv(TimingSolver *solver,
                        const ExecutionState *sa,
