@@ -180,7 +180,8 @@ LoopHandler::LoopHandler(Executor *_executor, ExecutionState *es, Loop *loop)
       executor(_executor),
       solver(_executor->solver),
       loop(loop),
-      tree(es->getID()) {
+      tree(es->getID()),
+      canUseExecTree(true) {
   assert(loop);
   addOpenState(es);
   for (ref<Expr> e : es->constraints) {

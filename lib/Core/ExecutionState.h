@@ -39,6 +39,8 @@ class MemoryObject;
 class PTreeNode;
 struct InstructionInfo;
 
+extern llvm::cl::opt<bool> OptimizeITEUsingExecTree;
+
 llvm::raw_ostream &operator<<(llvm::raw_ostream &os, const MemoryMap &mm);
 
 struct StackFrame {

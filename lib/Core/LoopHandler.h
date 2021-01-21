@@ -72,6 +72,8 @@ public:
   ConstraintSet initialConstraints;
 
   ExecTree tree;
+
+  bool canUseExecTree;
 };
 
 }

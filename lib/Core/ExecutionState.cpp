@@ -57,12 +57,12 @@ cl::opt<bool> OptimizeArrayValuesUsingSolver(
     "optimize-array-values-using-solver", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
+}
 
-cl::opt<bool> OptimizeITEUsingExecTree(
+cl::opt<bool> klee::OptimizeITEUsingExecTree(
     "optimize-ite-using-exec-tree", cl::init(false),
     cl::desc(""),
     cl::cat(MergeCat));
-}
 
 /***/
 
@@ -648,7 +648,7 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
       }
 
       ref<Expr> &v = sf.locals[reg].value;
-      if (OptimizeITEUsingExecTree) {
+      if (OptimizeITEUsingExecTree && loopHandler->canUseExecTree) {
         v = mergeValuesUsingExecTree(valuesMap, loopHandler);
       } else {
         v = mergeValues(suffixes, values);
