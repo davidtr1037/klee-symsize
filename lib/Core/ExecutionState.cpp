@@ -532,8 +532,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   }
 
   /* local vars */
-  mergeLocalVars(merged, states, suffixes, loopHandler);
-
+  mergeLocalVars(merged, states, suffixes, loopHandler, isComplete);
   /* heap */
   mergeHeap(merged, states, suffixes, mutated, loopHandler);
 
@@ -623,7 +622,8 @@ bool ExecutionState::canMerge(std::vector<ExecutionState *> &states,
 void ExecutionState::mergeLocalVars(ExecutionState *merged,
                                     std::vector<ExecutionState *> &states,
                                     std::vector<ref<Expr>> &suffixes,
-                                    LoopHandler *loopHandler) {
+                                    LoopHandler *loopHandler,
+                                    bool isComplete) {
   for (unsigned i = 0; i < merged->stack.size(); i++) {
     StackFrame &sf = merged->stack[i];
     for (unsigned reg = 0; reg < sf.kf->numRegisters; reg++) {
@@ -760,14 +760,29 @@ ref<Expr> ExecutionState::mergeValuesFromNode(ExecTreeNode *n,
                                               State2Value &valuesMap) {
   if (n->isLeaf()) {
     auto i = valuesMap.find(n->stateID);
-    assert(i != valuesMap.end());
-    return i->second;
+    if (i == valuesMap.end()) {
+      return nullptr;
+    } else {
+      return i->second;
+    }
   }
 
   /* TODO: left/right or right/left? */
   ref<Expr> lv = mergeValuesFromNode(n->left, valuesMap);
   ref<Expr> rv = mergeValuesFromNode(n->right, valuesMap);
-  return SelectExpr::create(n->left->e, lv, rv);
+  if (lv.isNull()) {
+    if (rv.isNull()) {
+      return nullptr;
+    } else {
+      return rv;
+    }
+  } else {
+    if (rv.isNull()) {
+      return lv;
+    } else {
+      return SelectExpr::create(n->left->e, lv, rv);
+    }
+  }
 }
 
 bool ExecutionState::areEquiv(TimingSolver *solver,

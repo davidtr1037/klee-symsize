@@ -230,7 +230,8 @@ public:
   static void mergeLocalVars(ExecutionState *merged,
                              std::vector<ExecutionState *> &states,
                              std::vector<ref<Expr>> &suffixes,
-                             LoopHandler *loopHandler);
+                             LoopHandler *loopHandler,
+                             bool isComplete);
 
   static void mergeHeap(ExecutionState *merged,
                         std::vector<ExecutionState *> &states,
