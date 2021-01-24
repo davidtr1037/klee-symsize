@@ -914,8 +914,8 @@ void Executor::branch(ExecutionState &state,
       result.push_back(ns);
       processTree->attach(es->ptreeNode, ns, es);
 
-      if (UseLoopMerge) {
-        if (!es->loopHandler.isNull() && OptimizeITEUsingExecTree) {
+      if (UseLoopMerge && !es->loopHandler.isNull()) {
+        if (OptimizeITEUsingExecTree || OptimizeArrayITEUsingExecTree) {
           if (es->loopHandler->canUseExecTree) {
             klee_warning("unsupported execution tree extension");
             es->loopHandler->canUseExecTree = false;
@@ -1135,8 +1135,8 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     falseState = trueState->branch();
     addedStates.push_back(falseState);
 
-    if (UseLoopMerge) {
-      if (!current.loopHandler.isNull() && OptimizeITEUsingExecTree) {
+    if (UseLoopMerge && !current.loopHandler.isNull()) {
+      if (OptimizeITEUsingExecTree || OptimizeArrayITEUsingExecTree) {
         current.loopHandler->tree.extend(current.getID(),
                                          condition,
                                          trueState->getID(),

@@ -40,6 +40,7 @@ class PTreeNode;
 struct InstructionInfo;
 
 extern llvm::cl::opt<bool> OptimizeITEUsingExecTree;
+extern llvm::cl::opt<bool> OptimizeArrayITEUsingExecTree;
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &os, const MemoryMap &mm);
 
