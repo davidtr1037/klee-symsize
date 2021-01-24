@@ -3579,34 +3579,35 @@ void Executor::executeAlloc(ExecutionState &state,
     std::vector<uint64_t> partition;
     if (capacity > 8000 && PartitionLargeObjects) {
       computePartition(state, partition);
-      assert(!partition.empty());
-      for (uint64_t partitionSize : partition) {
-        klee_message("partition size: %lu", partitionSize);
-      }
-
-      std::vector<const MemoryObject *> objects;
-      memory->allocateWithPartition(partition,
-                                    isLocal,
-                                    false,
-                                    allocSite,
-                                    allocationAlignment,
-                                    objects);
-      for (unsigned i = 0; i < objects.size(); i++) {
-        const MemoryObject *mo = objects[i];
-        assert(mo);
-        klee_message("allocated sub-object: %lu", mo->address);
-
-        ObjectState *os = bindObjectInState(state, mo, isLocal);
-        if (zeroMemory) {
-          os->initializeToZero();
-        } else {
-          os->initializeToRandom();
+      if (!partition.empty()) {
+        for (uint64_t partitionSize : partition) {
+          klee_message("partition size: %lu", partitionSize);
         }
-        if (i == 0) {
-          bindLocal(target, state, mo->getBaseExpr());
+
+        std::vector<const MemoryObject *> objects;
+        memory->allocateWithPartition(partition,
+                                      isLocal,
+                                      false,
+                                      allocSite,
+                                      allocationAlignment,
+                                      objects);
+        for (unsigned i = 0; i < objects.size(); i++) {
+          const MemoryObject *mo = objects[i];
+          assert(mo);
+          klee_message("allocated sub-object: %lu", mo->address);
+
+          ObjectState *os = bindObjectInState(state, mo, isLocal);
+          if (zeroMemory) {
+            os->initializeToZero();
+          } else {
+            os->initializeToRandom();
+          }
+          if (i == 0) {
+            bindLocal(target, state, mo->getBaseExpr());
+          }
         }
+        return;
       }
-      return;
     }
 
     MemoryObject *mo =
