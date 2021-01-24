@@ -48,6 +48,12 @@ public:
                          const llvm::Value *allocSite, size_t alignment);
   MemoryObject *allocateFixed(uint64_t address, uint64_t size,
                               const llvm::Value *allocSite);
+  bool allocateWithPartition(std::vector<uint64_t> partition,
+                             bool isLocal,
+                             bool isGlobal,
+                             const llvm::Value *allocSite,
+                             size_t alignment,
+                             std::vector<const MemoryObject *> &result);
   void deallocate(const MemoryObject *mo);
   void markFreed(MemoryObject *mo);
   ArrayCache *getArrayCache() const { return arrayCache; }

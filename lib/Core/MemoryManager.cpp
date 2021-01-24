@@ -178,7 +178,7 @@ MemoryObject *MemoryManager::allocate(ref<Expr> size,
     return 0;
 
   ++stats::allocations;
-  MemoryObject *res = new MemoryObject(address, size, capacity, isLocal, isGlobal, false,
+  MemoryObject *res = new MemoryObject(address, size, capacity, isLocal, isGlobal, false, true,
                                        allocSite, this);
   objects.insert(res);
   return res;
@@ -203,16 +203,98 @@ MemoryObject *MemoryManager::allocateFixed(uint64_t address, uint64_t size,
     Context::get().getPointerWidth()
   );
   MemoryObject *res =
-      new MemoryObject(address, sizeExpr, size, false, true, true, allocSite, this);
+      new MemoryObject(address, sizeExpr, size, false, true, true, true, allocSite, this);
   objects.insert(res);
   return res;
+}
+
+bool MemoryManager::allocateWithPartition(std::vector<uint64_t> partition,
+                                          bool isLocal,
+                                          bool isGlobal,
+                                          const llvm::Value *allocSite,
+                                          size_t alignment,
+                                          std::vector<const MemoryObject *> &result) {
+    uint64_t total_size = 0;
+    for (uint64_t mo_size : partition) {
+        total_size += mo_size;
+    }
+
+    if (total_size > 10 * 1024 * 1024) {
+        klee_warning_once(0, "Large alloc: %" PRIu64 " bytes.  KLEE may run out of memory.", total_size);
+    }
+
+    if (NullOnZeroMalloc && total_size == 0) {
+        assert(0);
+    }
+
+    if (!llvm::isPowerOf2_64(alignment)) {
+        klee_warning("Only alignment of power of two is supported");
+        return false;
+    }
+
+    uint64_t address = 0;
+    char *next = nextFreeSlot;
+
+    if (DeterministicAllocation) {
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 9)
+        address = llvm::alignTo((uint64_t)(next) + alignment - 1, alignment);
+#else
+        address = llvm::RoundUpToAlignment((uint64_t)(next) + alignment - 1,
+                alignment);
+#endif
+
+        size_t alloc_size = std::max(total_size, (uint64_t)(1));
+        if ((char *)(address) + alloc_size < deterministicSpace + spaceSize) {
+            next = (char *)(address) + alloc_size + RedzoneSize;
+        } else {
+            klee_warning_once(0, "Couldn't allocate %" PRIu64 " bytes. Not enough deterministic space left.", total_size);
+            address = 0;
+        }
+    } else {
+        if (alignment <= 8) {
+            address = (uint64_t)(malloc(total_size));
+        } else {
+            int res = posix_memalign((void **)(&address), alignment, total_size);
+            if (res < 0) {
+                klee_warning("Allocating aligned memory failed.");
+                address = 0;
+            }
+        }
+    }
+
+    nextFreeSlot = next;
+
+    if (!address) {
+        return false;
+    }
+
+    uint64_t offset = 0;
+    for (size_t mo_size : partition) {
+        ++stats::allocations;
+        /* TODO: first object can be free'd */
+        ref<Expr> sizeExpr = ConstantExpr::create(mo_size, Expr::Int64);
+        MemoryObject *mo = new MemoryObject(address + offset,
+                                            sizeExpr,
+                                            mo_size,
+                                            isLocal,
+                                            isGlobal,
+                                            false,
+                                            false,
+                                            allocSite,
+                                            this);
+        objects.insert(mo);
+        result.push_back(mo);
+        offset += mo_size;
+    }
+
+    return true;
 }
 
 void MemoryManager::deallocate(const MemoryObject *mo) { assert(0); }
 
 void MemoryManager::markFreed(MemoryObject *mo) {
   if (objects.find(mo) != objects.end()) {
-    if (!mo->isFixed && !DeterministicAllocation)
+    if (!mo->isFixed && mo->canFree && !DeterministicAllocation)
       free((void *)mo->address);
     objects.erase(mo);
   }

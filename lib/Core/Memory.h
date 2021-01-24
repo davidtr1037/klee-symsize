@@ -73,6 +73,8 @@ public:
   /// should sensibly be only at creation time).
   mutable std::vector< ref<Expr> > cexPreferences;
 
+  bool canFree;
+
   // DO NOT IMPLEMENT
   MemoryObject(const MemoryObject &b);
   MemoryObject &operator=(const MemoryObject &b);
@@ -87,11 +89,12 @@ public:
       capacity(0),
       isFixed(true),
       parent(NULL),
-      allocSite(0) {
+      allocSite(0),
+      canFree(false) {
   }
 
   MemoryObject(uint64_t address, ref<Expr> size, unsigned capacity,
-               bool isLocal, bool isGlobal, bool isFixed,
+               bool isLocal, bool isGlobal, bool isFixed, bool canFree,
                const llvm::Value *allocSite,
                MemoryManager *parent)
     : id(counter++),
@@ -104,7 +107,8 @@ public:
       isFixed(isFixed),
       isUserSpecified(false),
       parent(parent),
-      allocSite(allocSite) {
+      allocSite(allocSite),
+      canFree(canFree) {
   }
 
   ~MemoryObject();
