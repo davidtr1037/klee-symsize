@@ -420,6 +420,7 @@ cl::opt<bool> DebugTaint("debug-taint", cl::init(false), cl::desc(""));
 cl::opt<bool> DebugLoopForks("debug-loop-forks", cl::init(false), cl::desc(""));
 cl::opt<bool> CollectLoopStats("collect-loop-stats", cl::init(false), cl::desc(""));
 cl::opt<bool> CollectMergeStats("collect-merge-stats", cl::init(false), cl::desc(""));
+cl::opt<bool> PartitionLargeObjects("partition-large-objects", cl::init(false), cl::desc(""));
 
 } // namespace
 
@@ -3575,6 +3576,39 @@ void Executor::executeAlloc(ExecutionState &state,
       setTaint(state, size);
     }
 
+    std::vector<uint64_t> partition;
+    if (capacity > 8000 && PartitionLargeObjects) {
+      computePartition(state, partition);
+      assert(!partition.empty());
+      for (uint64_t partitionSize : partition) {
+        klee_message("partition size: %lu", partitionSize);
+      }
+
+      std::vector<const MemoryObject *> objects;
+      memory->allocateWithPartition(partition,
+                                    isLocal,
+                                    false,
+                                    allocSite,
+                                    allocationAlignment,
+                                    objects);
+      for (unsigned i = 0; i < objects.size(); i++) {
+        const MemoryObject *mo = objects[i];
+        assert(mo);
+        klee_message("allocated sub-object: %lu", mo->address);
+
+        ObjectState *os = bindObjectInState(state, mo, isLocal);
+        if (zeroMemory) {
+          os->initializeToZero();
+        } else {
+          os->initializeToRandom();
+        }
+        if (i == 0) {
+          bindLocal(target, state, mo->getBaseExpr());
+        }
+      }
+      return;
+    }
+
     MemoryObject *mo =
         memory->allocate(size, capacity, isLocal, /*isGlobal=*/false,
                          allocSite, allocationAlignment);
@@ -4528,6 +4562,69 @@ void Executor::dumpMergeStats() {
       klee_message("%s:%u (%s)", basename(l.file.data()), l.line, l.function.data());
     }
     klee_message("---");
+  }
+}
+
+Type *Executor::getAllocationType(ExecutionState &state) {
+  Value *v = state.prevPC->inst;
+  for (auto u : v->users()) {
+    CastInst *inst = dyn_cast<CastInst>(u);
+    if (inst) {
+      PointerType *t = dyn_cast<PointerType>(inst->getDestTy());
+      if (t) {
+        return t->getElementType();
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+bool Executor::shouldIsolateType(Type *t) {
+  ArrayType *at = dyn_cast<ArrayType>(t);
+  if (at) {
+    return kmodule->targetData->getTypeStoreSize(at) > 200;
+  } else {
+    return false;
+  }
+}
+
+void Executor::computePartition(ExecutionState &state,
+                                std::vector<uint64_t> &partition) {
+  StructType *st = dyn_cast<StructType>(getAllocationType(state));
+  if (!st) {
+    return;
+  }
+
+  /* compute the actual type size in the struct */
+  const StructLayout *sl = kmodule->targetData->getStructLayout(st);
+  std::vector<uint64_t> sizes;
+  for (unsigned i = 0; i < st->getNumElements(); i++) {
+    uint64_t size;
+    if (i < st->getNumElements() - 1) {
+      size = sl->getElementOffset(i + 1) - sl->getElementOffset(i);
+    } else {
+      size = sl->getSizeInBytes() - sl->getElementOffset(i);
+    }
+    sizes.push_back(size);
+  }
+
+  unsigned i = 0;
+  while (i < st->getNumElements()) {
+    uint64_t sum = 0;
+    while (i < st->getNumElements() && !shouldIsolateType(st->getElementType(i))) {
+      sum += sizes[i];
+      i++;
+    }
+
+    if (sum != 0) {
+      partition.push_back(sum);
+    }
+
+    if (i < st->getNumElements()) {
+      partition.push_back(sizes[i]);
+      i++;
+    }
   }
 }
 

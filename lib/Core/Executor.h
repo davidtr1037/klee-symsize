@@ -483,6 +483,12 @@ private:
 
   void dumpMergeStats();
 
+  llvm::Type *getAllocationType(ExecutionState &state);
+
+  bool shouldIsolateType(llvm::Type *t);
+
+  void computePartition(ExecutionState &state,
+                        std::vector<uint64_t> &partition);
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,
       InterpreterHandler *ie);
