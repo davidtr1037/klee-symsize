@@ -64,6 +64,11 @@ cl::opt<bool> klee::OptimizeITEUsingExecTree(
     cl::desc(""),
     cl::cat(MergeCat));
 
+cl::opt<bool> klee::OptimizeArrayITEUsingExecTree(
+    "optimize-array-ite-using-exec-tree", cl::init(false),
+    cl::desc(""),
+    cl::cat(MergeCat));
+
 /***/
 
 std::uint32_t ExecutionState::nextID = 1;
@@ -677,23 +682,27 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
     for (unsigned i = 0; i < mo->capacity; i++) {
       std::vector<ref<Expr>> values;
       std::vector<ref<Expr>> neededSuffixes;
+      State2Value valuesMap;
       for (unsigned j = 0; j < states.size(); j++) {
         ExecutionState *es = states[j];
         const ObjectState *other = es->addressSpace.findObject(mo);
         assert(other);
         assert(wos->getObject()->capacity == other->getObject()->capacity);
 
+        ref<Expr> e = other->read8(i);
         if (!mo->hasFixedSize() && shouldOptimizeArrayValues()) {
           if (OptimizeArrayValuesByTracking) {
             if (i < other->getActualBound()) {
-              values.push_back(other->read8(i));
+              values.push_back(e);
               neededSuffixes.push_back(suffixes[j]);
+              valuesMap[es->getID()] = e;
             } else {
               /* the offset may be still valid */
               if (i < minInvalidOffset[j]) {
                 if (es->isValidOffset(loopHandler->solver, mo, i)) {
-                  values.push_back(other->read8(i));
+                  values.push_back(e);
                   neededSuffixes.push_back(suffixes[j]);
+                  valuesMap[es->getID()] = e;
                 } else {
                   minInvalidOffset[j] = i;
                 }
@@ -702,21 +711,28 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
           } else if (OptimizeArrayValuesUsingSolver) {
             if (i < minInvalidOffset[j]) {
               if (es->isValidOffset(loopHandler->solver, mo, i)) {
-                values.push_back(other->read8(i));
+                values.push_back(e);
                 neededSuffixes.push_back(suffixes[j]);
+                valuesMap[es->getID()] = e;
               } else {
                 minInvalidOffset[j] = i;
               }
             }
           }
         } else {
-          values.push_back(other->read8(i));
+          values.push_back(e);
           neededSuffixes.push_back(suffixes[j]);
+          valuesMap[es->getID()] = e;
         }
       }
 
       if (!values.empty()) {
-        ref<Expr> v = mergeValues(neededSuffixes, values);
+        ref<Expr> v;
+        if (OptimizeArrayITEUsingExecTree && loopHandler->canUseExecTree) {
+          v = mergeValuesUsingExecTree(valuesMap, loopHandler);
+        } else {
+          v = mergeValues(neededSuffixes, values);
+        }
         toWrite.push_back(v);
       } else {
         toWrite.push_back(nullptr);
