@@ -645,6 +645,7 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
       }
 
       std::vector<ref<Expr>> values;
+      /* TODO: update only if needed */
       State2Value valuesMap;
       for (ExecutionState *es : states) {
         ref<Expr> e = es->stack[i].locals[reg].value;
@@ -682,6 +683,7 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
     for (unsigned i = 0; i < mo->capacity; i++) {
       std::vector<ref<Expr>> values;
       std::vector<ref<Expr>> neededSuffixes;
+      /* TODO: update only if needed */
       State2Value valuesMap;
       for (unsigned j = 0; j < states.size(); j++) {
         ExecutionState *es = states[j];
