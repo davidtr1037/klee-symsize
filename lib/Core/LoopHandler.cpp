@@ -121,8 +121,22 @@ void LoopHandler::releaseStates() {
       merged = ExecutionState::mergeStates(states);
     }
     if (!merged) {
-      /* TODO: handle */
-      assert(0);
+      char msg[1000];
+      snprintf(msg,
+               sizeof(msg),
+               "unsupported merge: %s:%u",
+               states[0]->prevPC->info->file.data(),
+               states[0]->prevPC->info->line);
+      klee_warning("%s", msg);
+
+      for (ExecutionState *es : states) {
+        executor->mergingSearcher->inCloseMerge.erase(es);
+        es->suffixConstraints.clear();
+        executor->mergingSearcher->continueState(*es);
+      }
+
+      /* TODO: refactor... */
+      continue;
     }
 
     if (ValidateMerge) {
