@@ -267,6 +267,12 @@ public:
 
   static ref<Expr> buildMergedConstraint(std::vector<ExecutionState *> &states);
 
+  static ref<Expr> buildMergedConstraintWithExecTree(LoopHandler *loopHandler,
+                                              std::vector<ExecutionState *> &states);
+
+  static std::pair<ref<Expr>, bool> buildMergedConstraintFromNode(ExecTreeNode *n,
+                                                                 std::set<uint32_t> &ids);
+
   bool isValidOffset(TimingSolver *solver,
                      const MemoryObject *mo,
                      uint64_t offset);

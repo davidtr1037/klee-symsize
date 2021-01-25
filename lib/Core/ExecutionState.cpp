@@ -552,7 +552,11 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   if (!isComplete) {
     ref<Expr> orExpr;
     if (mergedConstraint.isNull()) {
-      orExpr = buildMergedConstraint(states);
+      if (OptimizeITEUsingExecTree) {
+        orExpr = buildMergedConstraintWithExecTree(loopHandler, states);
+      } else {
+        orExpr = buildMergedConstraint(states);
+      }
     } else {
       orExpr = mergedConstraint;
     }
@@ -948,6 +952,55 @@ ref<Expr> ExecutionState::buildMergedConstraint(std::vector<ExecutionState *> &s
   }
 
   return orExpr;
+}
+
+ref<Expr> ExecutionState::buildMergedConstraintWithExecTree(LoopHandler *loopHandler,
+                                                            std::vector<ExecutionState *> &states) {
+  std::set<uint32_t> ids;
+  for (ExecutionState *es : states) {
+    ids.insert(es->getID());
+  }
+
+  ExecTreeNode *n = loopHandler->tree.root;
+  auto p = buildMergedConstraintFromNode(n, ids);
+  return p.first;
+}
+
+std::pair<ref<Expr>, bool> ExecutionState::buildMergedConstraintFromNode(ExecTreeNode *n,
+                                                                         std::set<uint32_t> &ids) {
+  if (n->isLeaf()) {
+    auto i = ids.find(n->stateID);
+    if (i == ids.end()) {
+      return std::make_pair(nullptr, false);
+    } else {
+      return std::make_pair(n->e, true);
+    }
+  }
+
+  /* TODO: left/right or right/left? */
+  auto lp = buildMergedConstraintFromNode(n->left, ids);
+  auto rp = buildMergedConstraintFromNode(n->right, ids);
+  ref<Expr> lv = lp.first;
+  ref<Expr> rv = rp.first;
+
+  if (lv.isNull()) {
+    if (rv.isNull()) {
+      return std::make_pair(nullptr, false);
+    } else {
+      return std::make_pair(AndExpr::create(n->e, rv), false);
+    }
+  } else {
+    if (rv.isNull()) {
+      return std::make_pair(AndExpr::create(n->e, lv), false);
+    } else {
+      if (lp.second && rp.second) {
+        return std::make_pair(n->e, true);
+      } else {
+        /* TODO: encode as or(and, and)? */
+        return std::make_pair(AndExpr::create(n->e, OrExpr::create(lv, rv)), false);
+      }
+    }
+  }
 }
 
 bool ExecutionState::isValidOffset(TimingSolver *solver,
