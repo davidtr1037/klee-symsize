@@ -552,7 +552,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
   if (!isComplete) {
     ref<Expr> orExpr;
     if (mergedConstraint.isNull()) {
-      if (OptimizeITEUsingExecTree) {
+      if (OptimizeITEUsingExecTree && loopHandler->canUseExecTree) {
         orExpr = buildMergedConstraintWithExecTree(loopHandler, states);
       } else {
         orExpr = buildMergedConstraint(states);
