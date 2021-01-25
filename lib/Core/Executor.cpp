@@ -3577,7 +3577,7 @@ void Executor::executeAlloc(ExecutionState &state,
     }
 
     std::vector<uint64_t> partition;
-    if (capacity > 8000 && PartitionLargeObjects) {
+    if (PartitionLargeObjects) {
       computePartition(state, partition);
       if (!partition.empty()) {
         for (uint64_t partitionSize : partition) {
@@ -4592,7 +4592,12 @@ bool Executor::shouldIsolateType(Type *t) {
 
 void Executor::computePartition(ExecutionState &state,
                                 std::vector<uint64_t> &partition) {
-  StructType *st = dyn_cast<StructType>(getAllocationType(state));
+  Type *t = getAllocationType(state);
+  if (!t) {
+    return;
+  }
+
+  StructType *st = dyn_cast<StructType>(t);
   if (!st) {
     return;
   }
