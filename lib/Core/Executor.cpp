@@ -421,6 +421,7 @@ cl::opt<bool> DebugLoopForks("debug-loop-forks", cl::init(false), cl::desc(""));
 cl::opt<bool> CollectLoopStats("collect-loop-stats", cl::init(false), cl::desc(""));
 cl::opt<bool> CollectMergeStats("collect-merge-stats", cl::init(false), cl::desc(""));
 cl::opt<bool> PartitionLargeObjects("partition-large-objects", cl::init(false), cl::desc(""));
+cl::opt<unsigned> MaxPartitionSize("max-partition-size", cl::init(100), cl::desc(""));
 
 } // namespace
 
@@ -4584,7 +4585,7 @@ Type *Executor::getAllocationType(ExecutionState &state) {
 bool Executor::shouldIsolateType(Type *t) {
   ArrayType *at = dyn_cast<ArrayType>(t);
   if (at) {
-    return kmodule->targetData->getTypeStoreSize(at) > 200;
+    return kmodule->targetData->getTypeStoreSize(at) > MaxPartitionSize;
   } else {
     return false;
   }
