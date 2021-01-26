@@ -966,6 +966,10 @@ ref<Expr> ExecutionState::buildMergedConstraintWithExecTree(LoopHandler *loopHan
   return p.first;
 }
 
+/*
+ * we can use the solver to reduce 'and' expression to rv/lv (in some cases),
+ * but it doesn't seem to be that helpful in practice...
+ */
 std::pair<ref<Expr>, bool> ExecutionState::buildMergedConstraintFromNode(ExecTreeNode *n,
                                                                          std::set<uint32_t> &ids) {
   if (n->isLeaf()) {
