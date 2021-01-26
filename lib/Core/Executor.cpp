@@ -4102,6 +4102,9 @@ void Executor::runFunctionAsMain(Function *f,
 
   if (statsTracker)
     statsTracker->done();
+
+  double t = (double)(stats::mergeTime) / (double)(statsTracker->elapsed().toMicroseconds());
+  klee_message("Merge time: %f%%", 100 * t);
 }
 
 unsigned Executor::getPathStreamID(const ExecutionState &state) {

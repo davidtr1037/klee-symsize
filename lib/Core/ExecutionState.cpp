@@ -10,6 +10,7 @@
 #include "ExecutionState.h"
 #include "Memory.h"
 #include "MergeUtils.h"
+#include "CoreStats.h"
 
 #include "klee/Expr/Expr.h"
 #include "klee/Expr/ExprVisitor.h"
@@ -19,6 +20,7 @@
 #include "klee/Module/KModule.h"
 #include "klee/Support/OptionCategories.h"
 #include "klee/Solver/SolverStats.h"
+#include "klee/Statistics/TimerStatIncrementer.h"
 
 #include "llvm/IR/Function.h"
 #include "llvm/Support/CommandLine.h"
@@ -501,6 +503,8 @@ void ExecutionContext::dump() const {
 }
 
 ExecutionState *ExecutionState::mergeStates(std::vector<ExecutionState *> &states) {
+  TimerStatIncrementer timer(stats::mergeTime);
+
   assert(!states.empty());
   ExecutionState *merged = states[0];
 
@@ -518,6 +522,8 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
                                                      bool isComplete,
                                                      ref<Expr> mergedConstraint,
                                                      LoopHandler *loopHandler) {
+  TimerStatIncrementer timer(stats::mergeTime);
+
   std::set<const MemoryObject*> mutated;
   if (!canMerge(states, mutated)) {
     return nullptr;
