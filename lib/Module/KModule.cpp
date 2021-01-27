@@ -422,8 +422,8 @@ void KModule::visitLoop(Function &f, Loop *loop) {
 
 bool KModule::isSupportedLoop(Loop *loop) {
   std::set<std::string> wl;
-  wl.insert("asn1_get_length_der");
-  wl.insert("asn1_get_tag_der");
+  //wl.insert("asn1_get_length_der");
+  //wl.insert("asn1_get_tag_der");
   if (wl.find(loop->getHeader()->getParent()->getName()) != wl.end()) {
     return true;
   }
