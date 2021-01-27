@@ -74,8 +74,6 @@ void LoopHandler::addClosedState(ExecutionState *es,
 }
 
 void LoopHandler::releaseStates() {
-  assert(mergeGroups.size() <= 2);
-
   std::vector<ref<Expr>> toAdd;
   unsigned largestGroup = 0;
   if (mergeGroups.size() == 2) {
@@ -148,6 +146,9 @@ void LoopHandler::releaseStates() {
 
     executor->mergingSearcher->continueState(*merged);
     executor->collectMergeStats(*merged);
+    klee_message("merging at %s:%u",
+                 merged->pc->info->file.data(),
+                 merged->pc->info->line);
     if (mergeGroups.size() == 1) {
       klee_message("merged %lu states (complete = %u)", states.size(), isComplete);
     } else {
