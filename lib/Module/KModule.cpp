@@ -71,6 +71,12 @@ namespace {
     eSwitchTypeInternal
   };
 
+  enum LoopLimitType {
+    LoopLimitNone,
+    LoopLimitSingleExit,
+    LoopLimitNoCall,
+  };
+
   cl::opt<bool>
   OutputSource("output-source",
                cl::desc("Write the assembly for the final transformed source (default=true)"),
@@ -111,6 +117,16 @@ namespace {
                              cl::desc("Allow optimization of functions that "
                                       "contain KLEE calls (default=true)"),
                              cl::init(true), cl::cat(ModuleCat));
+
+  cl::opt<LoopLimitType>
+  LoopLimit("loop-limit",
+            cl::desc(""),
+            cl::values(clEnumValN(LoopLimitNone, "none", ""),
+                       clEnumValN(LoopLimitSingleExit, "single-exit", ""),
+                       clEnumValN(LoopLimitNoCall, "no-call", "")
+                       KLEE_LLVM_CL_VAL_END),
+            cl::init(LoopLimitSingleExit),
+            cl::cat(ModuleCat));
 }
 
 /***/
@@ -405,27 +421,55 @@ void KModule::visitLoop(Function &f, Loop *loop) {
 }
 
 bool KModule::isSupportedLoop(Loop *loop) {
-  std::set<std::string> bl;
-  //bl.insert("png_handle_tEXt");
-  //bl.insert("strlen");
-  for (std::string s : bl) {
-    if (loop->getHeader()->getParent()->getName() == s) {
-      return false;
-    }
-  }
-
-  /* TODO: remove this */
   std::set<std::string> wl;
   wl.insert("asn1_get_length_der");
   wl.insert("asn1_get_tag_der");
-
-  SmallVector<BasicBlock *, 10> blocks;
-  loop->getExitBlocks(blocks);
-  if (blocks.size() != 1) {
-    return wl.find(loop->getHeader()->getParent()->getName()) != wl.end();
+  if (wl.find(loop->getHeader()->getParent()->getName()) != wl.end()) {
+    return true;
   }
 
-  return true;
+  std::set<std::string> bl;
+  if (bl.find(loop->getHeader()->getParent()->getName()) != bl.end()) {
+    return false;
+  }
+
+  SmallVector<BasicBlock *, 10> blocks;
+  switch (LoopLimit) {
+    case LoopLimitNone:
+      return true;
+
+    case LoopLimitSingleExit:
+      loop->getExitBlocks(blocks);
+      return blocks.size() == 1;
+
+    case LoopLimitNoCall:
+      return !hasFunctionCalls(loop);
+
+    default:
+      break;
+  }
+
+  assert(0);
+}
+
+bool KModule::hasFunctionCalls(Loop *loop) {
+  for (BasicBlock *bb : loop->getBlocks()) {
+    for (Instruction &inst : *bb) {
+      CallInst *call = dyn_cast<CallInst>(&inst);
+      if (call) {
+        Function *f = call->getCalledFunction();
+        if (f) {
+            if (!f->isDeclaration()) {
+              return true;
+            }
+        } else {
+            /* virtual call */
+            return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 void KModule::checkModule() {
