@@ -125,7 +125,7 @@ namespace {
                        clEnumValN(LoopLimitSingleExit, "single-exit", ""),
                        clEnumValN(LoopLimitNoCall, "no-call", "")
                        KLEE_LLVM_CL_VAL_END),
-            cl::init(LoopLimitSingleExit),
+            cl::init(LoopLimitNoCall),
             cl::cat(ModuleCat));
 }
 
