@@ -4511,6 +4511,7 @@ void Executor::onLoopEntry(ExecutionState &state, KInstruction *ki) {
 }
 
 void Executor::onLoopExit(ExecutionState &state, KInstruction *ki, bool &paused) {
+  /* TODO: don't set to false if the loop started in a caller function */
   state.stack.back().isExecutingLoop = false;
   if (!UseLoopMerge || state.loopHandler.isNull()) {
     return;
