@@ -701,7 +701,8 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
         assert(other);
         assert(wos->getObject()->capacity == other->getObject()->capacity);
 
-        ref<Expr> e = other->read8(i);
+        /* don't track this read, otherwise the optimization is useless */
+        ref<Expr> e = other->read8(i, false);
         if (!mo->hasFixedSize() && shouldOptimizeArrayValues()) {
           if (OptimizeArrayValuesByTracking) {
             if (i < other->getActualBound()) {

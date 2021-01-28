@@ -144,7 +144,11 @@ ArrayCache *ObjectState::getArrayCache() const {
   return object->parent->getArrayCache();
 }
 
-void ObjectState::onConcreteAccess(unsigned offset) const {
+void ObjectState::onConcreteAccess(unsigned offset, bool track) const {
+  if (!track) {
+    return;
+  }
+
   unsigned bound = offset + 1;
   if (bound > actualBound) {
     actualBound = bound;
@@ -152,7 +156,11 @@ void ObjectState::onConcreteAccess(unsigned offset) const {
 }
 
 /* TODO: try to use the solver */
-void ObjectState::onSymbolicAccess(ref<Expr> offset) const {
+void ObjectState::onSymbolicAccess(ref<Expr> offset, bool track) const {
+  if (!track) {
+    return;
+  }
+
   /* conservatively set to the max value (capacity) */
   actualBound = size;
 }
@@ -376,8 +384,8 @@ void ObjectState::setKnownSymbolic(unsigned offset,
 
 /***/
 
-ref<Expr> ObjectState::read8(unsigned offset) const {
-  onConcreteAccess(offset);
+ref<Expr> ObjectState::read8(unsigned offset, bool track) const {
+  onConcreteAccess(offset, track);
   if (isByteConcrete(offset)) {
     return ConstantExpr::create(concreteStore[offset], Expr::Int8);
   } else if (isByteKnownSymbolic(offset)) {
@@ -390,8 +398,8 @@ ref<Expr> ObjectState::read8(unsigned offset) const {
   }    
 }
 
-ref<Expr> ObjectState::read8(ref<Expr> offset) const {
-  onSymbolicAccess(offset);
+ref<Expr> ObjectState::read8(ref<Expr> offset, bool track) const {
+  onSymbolicAccess(offset, track);
   assert(!isa<ConstantExpr>(offset) && "constant offset passed to symbolic read8");
   unsigned base, size;
   fastRangeCheckOffset(offset, &base, &size);
@@ -451,17 +459,17 @@ void ObjectState::write8(ref<Expr> offset, ref<Expr> value) {
 
 /***/
 
-ref<Expr> ObjectState::read(ref<Expr> offset, Expr::Width width) const {
+ref<Expr> ObjectState::read(ref<Expr> offset, Expr::Width width, bool track) const {
   // Truncate offset to 32-bits.
   offset = ZExtExpr::create(offset, Expr::Int32);
 
   // Check for reads at constant offsets.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(offset))
-    return read(CE->getZExtValue(32), width);
+    return read(CE->getZExtValue(32), width, track);
 
   // Treat bool specially, it is the only non-byte sized write we allow.
   if (width == Expr::Bool)
-    return ExtractExpr::create(read8(offset), 0, Expr::Bool);
+    return ExtractExpr::create(read8(offset, track), 0, Expr::Bool);
 
   // Otherwise, follow the slow general case.
   unsigned NumBytes = width / 8;
@@ -471,14 +479,15 @@ ref<Expr> ObjectState::read(ref<Expr> offset, Expr::Width width) const {
     unsigned idx = Context::get().isLittleEndian() ? i : (NumBytes - i - 1);
     ref<Expr> Byte = read8(AddExpr::create(offset, 
                                            ConstantExpr::create(idx, 
-                                                                Expr::Int32)));
+                                                                Expr::Int32)),
+                           track);
     Res = i ? ConcatExpr::create(Byte, Res) : Byte;
   }
 
   return Res;
 }
 
-ref<Expr> ObjectState::read(unsigned offset, Expr::Width width) const {
+ref<Expr> ObjectState::read(unsigned offset, Expr::Width width, bool track) const {
   // Treat bool specially, it is the only non-byte sized write we allow.
   if (width == Expr::Bool)
     return ExtractExpr::create(read8(offset), 0, Expr::Bool);
@@ -489,7 +498,7 @@ ref<Expr> ObjectState::read(unsigned offset, Expr::Width width) const {
   ref<Expr> Res(0);
   for (unsigned i = 0; i != NumBytes; ++i) {
     unsigned idx = Context::get().isLittleEndian() ? i : (NumBytes - i - 1);
-    ref<Expr> Byte = read8(offset + idx);
+    ref<Expr> Byte = read8(offset + idx, track);
     Res = i ? ConcatExpr::create(Byte, Res) : Byte;
   }
 

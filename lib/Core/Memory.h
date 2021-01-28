@@ -261,9 +261,9 @@ public:
   // make contents all concrete and random
   void initializeToRandom();
 
-  ref<Expr> read(ref<Expr> offset, Expr::Width width) const;
-  ref<Expr> read(unsigned offset, Expr::Width width) const;
-  ref<Expr> read8(unsigned offset) const;
+  ref<Expr> read(ref<Expr> offset, Expr::Width width, bool track = true) const;
+  ref<Expr> read(unsigned offset, Expr::Width width, bool track = true) const;
+  ref<Expr> read8(unsigned offset, bool track = true) const;
 
   // return bytes written.
   void write(unsigned offset, ref<Expr> value);
@@ -298,7 +298,7 @@ private:
 
   void makeSymbolic();
 
-  ref<Expr> read8(ref<Expr> offset) const;
+  ref<Expr> read8(ref<Expr> offset, bool track) const;
   void write8(unsigned offset, ref<Expr> value);
   void write8(ref<Expr> offset, ref<Expr> value);
 
@@ -319,8 +319,8 @@ private:
 
   ArrayCache *getArrayCache() const;
 
-  void onConcreteAccess(unsigned offset) const;
-  void onSymbolicAccess(ref<Expr> offset) const;
+  void onConcreteAccess(unsigned offset, bool track = true) const;
+  void onSymbolicAccess(ref<Expr> offset, bool track = true) const;
 };
   
 } // End klee namespace
