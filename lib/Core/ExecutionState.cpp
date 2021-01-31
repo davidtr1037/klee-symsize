@@ -347,6 +347,8 @@ bool ExecutionState::merge(const ExecutionState &b) {
       if (av.isNull() || bv.isNull()) {
         // if one is null then by implication (we are at same pc)
         // we cannot reuse this local, so just ignore
+        /* TODO: for consistency */
+        av = nullptr;
       } else {
         av = SelectExpr::create(inA, av, bv);
       }
@@ -651,6 +653,9 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
         }
       }
       if (ignore) {
+        /* for consistency */
+        ref<Expr> &v = sf.locals[reg].value;
+        v = nullptr;
         continue;
       }
 
