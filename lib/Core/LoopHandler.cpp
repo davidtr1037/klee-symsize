@@ -119,6 +119,7 @@ void LoopHandler::releaseStates() {
       merged = ExecutionState::mergeStates(states);
     }
     if (!merged) {
+      /* TODO: merged state might have merge side effects */
       char msg[1000];
       snprintf(msg,
                sizeof(msg),
