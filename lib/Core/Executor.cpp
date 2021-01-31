@@ -1139,10 +1139,12 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     if (UseLoopMerge && !current.loopHandler.isNull()) {
       if (OptimizeITEUsingExecTree || OptimizeArrayITEUsingExecTree) {
-        current.loopHandler->tree.extend(current.getID(),
-                                         condition,
-                                         trueState->getID(),
-                                         falseState->getID());
+        if (current.loopHandler->canUseExecTree) {
+          current.loopHandler->tree.extend(current.getID(),
+                                           condition,
+                                           trueState->getID(),
+                                           falseState->getID());
+        }
       }
     }
 
