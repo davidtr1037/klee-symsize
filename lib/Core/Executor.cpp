@@ -422,6 +422,7 @@ cl::opt<bool> CollectLoopStats("collect-loop-stats", cl::init(false), cl::desc("
 cl::opt<bool> CollectMergeStats("collect-merge-stats", cl::init(false), cl::desc(""));
 cl::opt<bool> PartitionLargeObjects("partition-large-objects", cl::init(false), cl::desc(""));
 cl::opt<unsigned> MaxPartitionSize("max-partition-size", cl::init(100), cl::desc(""));
+cl::opt<unsigned> TerminateStatesOnMemoryLimit("terminate-states-on-memory-limit", cl::init(false), cl::desc(""));
 
 } // namespace
 
@@ -3023,6 +3024,10 @@ bool Executor::checkMemoryUsage() {
   // only terminate states when threshold (+100MB) exceeded
   if (totalUsage <= MaxMemory + 100)
     return true;
+
+  if (!TerminateStatesOnMemoryLimit) {
+    return true;
+  }
 
   // just guess at how many to kill
   const auto numStates = states.size();
