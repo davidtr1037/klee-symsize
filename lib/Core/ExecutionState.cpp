@@ -19,6 +19,7 @@
 #include "klee/Module/KInstruction.h"
 #include "klee/Module/KModule.h"
 #include "klee/Support/OptionCategories.h"
+#include "klee/Support/ErrorHandling.h"
 #include "klee/Solver/SolverStats.h"
 #include "klee/Statistics/TimerStatIncrementer.h"
 
@@ -347,6 +348,8 @@ bool ExecutionState::merge(const ExecutionState &b) {
       if (av.isNull() || bv.isNull()) {
         // if one is null then by implication (we are at same pc)
         // we cannot reuse this local, so just ignore
+        /* TODO: for consistency */
+        av = nullptr;
       } else {
         av = SelectExpr::create(inA, av, bv);
       }
@@ -568,6 +571,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     }
     /* TODO: used ExecutionState's addConstraint? */
     m.addConstraint(orExpr);
+    klee_message("partial merge constraint size %lu", orExpr->size);
   }
 
   if (OptimizeArrayValuesUsingITERewrite) {
@@ -651,6 +655,9 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
         }
       }
       if (ignore) {
+        /* for consistency */
+        ref<Expr> &v = sf.locals[reg].value;
+        v = nullptr;
         continue;
       }
 
