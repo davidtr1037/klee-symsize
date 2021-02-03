@@ -96,6 +96,12 @@ namespace {
                 cl::cat(TestCaseCat));
 
   cl::opt<bool>
+  NeverWriteKQueries("never-write-kqueries",
+                     cl::init(true),
+                     cl::desc(""),
+                     cl::cat(TestCaseCat));
+
+  cl::opt<bool>
   WriteSMT2s("write-smt2s",
              cl::desc("Write .smt2 (SMT-LIBv2) files for each test case (default=false)"),
              cl::cat(TestCaseCat));
@@ -536,7 +542,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
       }
     }
 
-    if (errorMessage || WriteKQueries) {
+    if (!NeverWriteKQueries && (errorMessage || WriteKQueries)) {
       std::string constraints;
       m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
       auto f = openTestFile("kquery", id);
