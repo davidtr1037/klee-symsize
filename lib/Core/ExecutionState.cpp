@@ -570,6 +570,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     }
     /* TODO: used ExecutionState's addConstraint? */
     m.addConstraint(orExpr);
+    klee_message("partial merge constraint size %lu", orExpr->size);
   }
 
   if (OptimizeArrayValuesUsingITERewrite) {
