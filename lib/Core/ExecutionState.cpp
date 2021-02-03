@@ -19,6 +19,7 @@
 #include "klee/Module/KInstruction.h"
 #include "klee/Module/KModule.h"
 #include "klee/Support/OptionCategories.h"
+#include "klee/Support/ErrorHandling.h"
 #include "klee/Solver/SolverStats.h"
 #include "klee/Statistics/TimerStatIncrementer.h"
 
