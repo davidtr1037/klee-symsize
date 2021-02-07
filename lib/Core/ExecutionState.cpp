@@ -571,6 +571,7 @@ ExecutionState *ExecutionState::mergeStatesOptimized(std::vector<ExecutionState 
     }
     /* TODO: used ExecutionState's addConstraint? */
     m.addConstraint(orExpr);
+    stats::mergedConstraintsSize += orExpr->size;
     klee_message("partial merge constraint size %lu", orExpr->size);
   }
 
@@ -676,6 +677,7 @@ void ExecutionState::mergeLocalVars(ExecutionState *merged,
       } else {
         v = mergeValues(suffixes, values);
       }
+      stats::mergedValuesSize += v->size;
     }
   }
 }
@@ -754,6 +756,7 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
           v = mergeValues(neededSuffixes, values);
         }
         toWrite.push_back(v);
+        stats::mergedValuesSize += v->size;
       } else {
         toWrite.push_back(nullptr);
       }

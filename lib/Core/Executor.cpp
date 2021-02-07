@@ -4566,6 +4566,8 @@ void Executor::collectMergeStats(ExecutionState &state) {
 
 void Executor::dumpMergeStats() {
   klee_message("Merge Statistics");
+  klee_message("Merged values size: %lu", (uint64_t)(stats::mergedValuesSize));
+  klee_message("Merged constraints size: %lu", (uint64_t)(stats::mergedConstraintsSize));
   uint64_t total = 0;
   for (auto i : mergeStats) {
     total += i.second;

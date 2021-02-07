@@ -28,3 +28,5 @@ Statistic stats::mergeTime("MergeTime", "Mtime");
 Statistic stats::states("States", "States");
 Statistic stats::trueBranches("TrueBranches", "Bt");
 Statistic stats::uncoveredInstructions("UncoveredInstructions", "Iuncov");
+Statistic stats::mergedValuesSize("MergedValues", "MV");
+Statistic stats::mergedConstraintsSize("MergedConstraints", "MC");
