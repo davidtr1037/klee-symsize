@@ -362,6 +362,8 @@ cl::opt<std::string> TimerInterval(
 
 cl::opt<bool> WarnUnsupportedLoops("warn-unsupported-loops", cl::init(true), cl::desc(""));
 
+cl::opt<uint64_t> MaxExprSizeToPrint("max-expr-size-to-print", cl::init(1000000), cl::desc(""));
+
 /*** Debugging options ***/
 
 /// The different query logging solvers that can switched on/off
@@ -3177,7 +3179,11 @@ std::string Executor::getAddressInfo(ExecutionState &state,
                                      ref<Expr> address) const{
   std::string Str;
   llvm::raw_string_ostream info(Str);
-  info << "\taddress: " << address << "\n";
+  if (address->size > MaxExprSizeToPrint) {
+    info << "\taddress: (expression size exceeded)\n";
+  } else {
+    info << "\taddress: " << address << "\n";
+  }
   uint64_t example;
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(address)) {
     example = CE->getZExtValue();
