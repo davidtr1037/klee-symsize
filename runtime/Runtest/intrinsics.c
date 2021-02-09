@@ -22,6 +22,8 @@
 
 #include "klee/ADT/KTest.h"
 
+#define EXIT_ON_OUT_OF_INPUTS
+
 static KTest *testData = 0;
 static unsigned testPosition = 0;
 
@@ -104,8 +106,12 @@ void klee_make_symbolic(void *array, size_t nbytes, const char *name) {
 
   for (;; ++testPosition) {
     if (testPosition >= testData->numObjects) {
+#ifdef EXIT_ON_OUT_OF_INPUTS
+      exit(0);
+#else
       report_internal_error("out of inputs. Will use zero if continuing.");
       memset(array, 0, nbytes);
+#endif
       break;
     } else {
       KTestObject *o = &testData->objects[testPosition];
