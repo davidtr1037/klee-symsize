@@ -123,8 +123,9 @@ void klee_make_symbolic(void *array, size_t nbytes, const char *name) {
       }
       memcpy(array, o->bytes, nbytes < o->numBytes ? nbytes : o->numBytes);
       if (nbytes != o->numBytes) {
-        report_internal_error("object sizes differ. Expected %zu but got %u",
-                              nbytes, o->numBytes);
+        /* TODO: happens with symbolic-size objects (due to capacity) */
+        //report_internal_error("object sizes differ. Expected %zu but got %u",
+        //                      nbytes, o->numBytes);
         if (o->numBytes < nbytes)
           memset((char *)array + o->numBytes, 0, nbytes - o->numBytes);
       }
