@@ -38,6 +38,11 @@ cl::opt<bool> ValidateMerge(
     cl::desc(""),
     cl::cat(klee::LoopCat));
 
+cl::opt<unsigned> MaxStatesToMerge(
+    "max-states-to-merge", cl::init(10000),
+    cl::desc(""),
+    cl::cat(klee::LoopCat));
+
 void LoopHandler::addOpenState(ExecutionState *es){
   openStates.push_back(es);
   activeStates++;
@@ -102,21 +107,28 @@ void LoopHandler::releaseStates() {
       }
     }
 
-    ExecutionState *merged;
+    ExecutionState *merged = nullptr;
     bool isComplete = (mergeGroups.size() == 1) && (earlyTerminated == 0);
-    if (UseOptimizedMerge) {
-      ref<Expr> e = nullptr;
-      if (OptimizeGroupMerge && mergeGroups.size() > 1 && groupId == largestGroup) {
-        e = ConstantExpr::create(1, Expr::Bool);
-        for (unsigned k = 0; k < toAdd.size(); k++) {
-          if (k != largestGroup) {
-            e = AndExpr::create(e, NotExpr::create(toAdd[k]));
+    /* TODO: pc or prevPC? */
+    klee_message("merging at %s:%u",
+                 states[0]->pc->info->file.data(),
+                 states[0]->pc->info->line);
+
+    if (MaxStatesToMerge == 0 || states.size() < MaxStatesToMerge) {
+      if (UseOptimizedMerge) {
+        ref<Expr> e = nullptr;
+        if (OptimizeGroupMerge && mergeGroups.size() > 1 && groupId == largestGroup) {
+          e = ConstantExpr::create(1, Expr::Bool);
+          for (unsigned k = 0; k < toAdd.size(); k++) {
+            if (k != largestGroup) {
+              e = AndExpr::create(e, NotExpr::create(toAdd[k]));
+            }
           }
         }
+        merged = ExecutionState::mergeStatesOptimized(states, isComplete, e, this);
+      } else {
+        merged = ExecutionState::mergeStates(states);
       }
-      merged = ExecutionState::mergeStatesOptimized(states, isComplete, e, this);
-    } else {
-      merged = ExecutionState::mergeStates(states);
     }
     if (!merged) {
       /* TODO: merged state might have merge side effects */
@@ -147,9 +159,6 @@ void LoopHandler::releaseStates() {
 
     executor->mergingSearcher->continueState(*merged);
     executor->collectMergeStats(*merged);
-    klee_message("merging at %s:%u",
-                 merged->pc->info->file.data(),
-                 merged->pc->info->line);
     if (mergeGroups.size() == 1) {
       klee_message("merged %lu states (complete = %u)", states.size(), isComplete);
     } else {
