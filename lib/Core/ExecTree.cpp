@@ -1,5 +1,8 @@
 #include "ExecTree.h"
 
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/FileSystem.h"
+
 using namespace std;
 using namespace llvm;
 
@@ -80,7 +83,7 @@ void ExecTree::dumpGML(llvm::raw_ostream &os, std::set<uint32_t> &ids) {
             os << *n->e;
             os << "\",shape=square";
         }
-        if (ids.find(n->stateID) != ids.end()) {
+        if (n->isLeaf() && ids.find(n->stateID) != ids.end()) {
             os << ",fillcolor=red";
         }
         os << "];\n";
@@ -93,6 +96,18 @@ void ExecTree::dumpGML(llvm::raw_ostream &os, std::set<uint32_t> &ids) {
         }
     }
     os << "}\n";
+}
+
+void ExecTree::dumpGMLToFile(std::set<uint32_t> &ids) {
+  static int mergeID = 0;
+  char path[1000] = {0,};
+  sprintf(path, "/tmp/exectree_%u", mergeID++);
+  std::error_code ec;
+  raw_fd_ostream *f = new raw_fd_ostream(path, ec, sys::fs::F_None);
+  if (f) {
+    dumpGML(*f, ids);
+    f->close();
+  }
 }
 
 }
