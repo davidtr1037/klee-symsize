@@ -887,8 +887,8 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
         continue;
       }
 
-      ref<Expr> v1 = os->read8(i);
-      ref<Expr> v2 = otherOS->read8(i);
+      ref<Expr> v1 = os->read8(i, false);
+      ref<Expr> v2 = otherOS->read8(i, false);
 
       bool isEqual;
       ConstraintSet tmp(sa->constraints);
