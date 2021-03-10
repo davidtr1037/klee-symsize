@@ -84,6 +84,7 @@ ObjectState::ObjectState(const MemoryObject *mo)
     knownSymbolics(0),
     updates(0, 0),
     actualBound(0),
+    upperBound(mo->capacity),
     size(mo->capacity),
     readOnly(false) {
   if (!UseConstantArrays) {
@@ -105,6 +106,7 @@ ObjectState::ObjectState(const MemoryObject *mo, const Array *array)
     knownSymbolics(0),
     updates(array, 0),
     actualBound(0),
+    upperBound(mo->capacity),
     size(mo->capacity),
     readOnly(false) {
   makeSymbolic();
@@ -120,6 +122,7 @@ ObjectState::ObjectState(const ObjectState &os)
     knownSymbolics(0),
     updates(os.updates),
     actualBound(os.actualBound),
+    upperBound(os.upperBound),
     size(os.size),
     readOnly(false) {
   assert(!os.readOnly && "no need to copy read only object?");

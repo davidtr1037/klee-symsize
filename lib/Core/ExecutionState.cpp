@@ -56,6 +56,12 @@ cl::opt<bool> OptimizeArrayValuesByTracking(
     cl::cat(MergeCat));
 
 /* TODO: can't be used with -validate-merge */
+cl::opt<bool> OptimizeArrayValuesUsingUpperBound(
+    "optimize-array-values-using-upper-bound", cl::init(false),
+    cl::desc(""),
+    cl::cat(MergeCat));
+
+/* TODO: can't be used with -validate-merge */
 cl::opt<bool> OptimizeArrayValuesUsingSolver(
     "optimize-array-values-using-solver", cl::init(false),
     cl::desc(""),
@@ -160,6 +166,7 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     forkDisabled(state.forkDisabled),
     /* TODO: copy-on-write? */
     taintedExprs(state.taintedExprs),
+    size2addr(state.size2addr),
     loopHandler(state.loopHandler),
     suffixConstraints(state.suffixConstraints) {
   for (const auto &cur_mergehandler: openMergeStack) {
@@ -431,6 +438,8 @@ void ExecutionState::addConstraint(ref<Expr> e) {
     ConstraintManager m(suffixConstraints);
     m.addConstraint(e);
   }
+
+  inferSizeConstraint(e);
 }
 
 void ExecutionState::addTaintedExpr(std::string name, ref<Expr> offset) {
@@ -698,12 +707,15 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
       minInvalidOffset[j] = mo->capacity;
     }
 
+    unsigned maxUpperBound = 0;
+
     std::vector<ref<Expr>> toWrite;
     for (unsigned i = 0; i < mo->capacity; i++) {
       std::vector<ref<Expr>> values;
       std::vector<ref<Expr>> neededSuffixes;
       /* TODO: update only if needed */
       State2Value valuesMap;
+
       for (unsigned j = 0; j < states.size(); j++) {
         ExecutionState *es = states[j];
         const ObjectState *other = es->addressSpace.findObject(mo);
@@ -729,6 +741,17 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
                   minInvalidOffset[j] = i;
                 }
               }
+            }
+          } else if (OptimizeArrayValuesUsingUpperBound) {
+            unsigned upperBound = other->getUpperBound();
+            if (upperBound >= maxUpperBound) {
+              maxUpperBound = upperBound;
+            }
+
+            if (i < upperBound) {
+              values.push_back(e);
+              neededSuffixes.push_back(suffixes[j]);
+              valuesMap[es->getID()] = e;
             }
           } else if (OptimizeArrayValuesUsingSolver) {
             if (i < minInvalidOffset[j]) {
@@ -772,6 +795,7 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
 
     /* TODO: is correct? */
     wos->setActualBound(0);
+    wos->resetUpperBound(maxUpperBound);
   }
 }
 
@@ -1033,4 +1057,75 @@ bool ExecutionState::isValidOffset(TimingSolver *solver,
   assert(success);
 
   return result != Solver::False;
+}
+
+void ExecutionState::linkSizeToID(ref<Expr> size, uint64_t address) {
+  size2addr[size].push_back(address);
+}
+
+bool ExecutionState::getAddressesBySize(ref<Expr> size,
+                                        std::vector<uint64_t> &addresses) {
+  auto i = size2addr.find(size);
+  if (i == size2addr.end()) {
+    return false;
+  } else {
+    addresses = i->second;
+    return true;
+  }
+}
+
+void ExecutionState::inferSizeConstraint(ref<Expr> condition) {
+  if (loopHandler.isNull()) {
+    return;
+  }
+
+  ref<EqExpr> ee = dyn_cast<EqExpr>(condition);
+  if (ee.isNull()) {
+    return;
+  }
+
+  ref<ConstantExpr> l = dyn_cast<ConstantExpr>(ee->left);
+  if (l.isNull() || l->getZExtValue() != 0) {
+    return;
+  }
+
+  ref<CmpExpr> ce = dyn_cast<CmpExpr>(ee->right);
+  if (ce.isNull()) {
+    return;
+  }
+
+  condition->dump();
+  ref<Expr> size = nullptr;
+  if (isa<UltExpr>(ce) || isa<UleExpr>(ce)) {
+    ref<ConstantExpr> l = dyn_cast<ConstantExpr>(ce->left);
+    if (l.isNull()) {
+      return;
+    }
+
+    ref<Expr> size = ce->right;
+    uint64_t bound = l->getZExtValue();
+
+    std::vector<uint64_t> addresses;
+    if (getAddressesBySize(size, addresses)) {
+      for (uint64_t address : addresses) {
+        ObjectPair op;
+        ref<ConstantExpr> ae = ConstantExpr::create(address, Expr::Int64);
+        if (addressSpace.resolveOne(*this, loopHandler->solver, ae, op)) {
+          ObjectState *wos = addressSpace.getWriteable(op.first, op.second);
+          switch (ce->getKind()) {
+          case Expr::Ult:
+            /* size <= c */
+            wos->setUpperBound(bound);
+            break;
+          case Expr::Ule:
+            /* size < c */
+            wos->setUpperBound(bound + 1);
+            break;
+          default:
+            break;
+          }
+        }
+      }
+    }
+  }
 }

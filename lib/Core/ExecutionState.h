@@ -28,6 +28,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <unordered_map>
 
 namespace klee {
 class Array;
@@ -85,6 +86,18 @@ struct StackFrame {
 class ExecutionState {
   typedef std::vector<ref<Expr>> ExprSet;
   typedef std::map<std::uint32_t, ref<Expr>> State2Value;
+
+  struct ExprKeyHash {
+    unsigned operator()(const ref<Expr> &e) const {
+      return e->hash();
+    }
+  };
+
+  struct ExprKeyEquality {
+    bool operator()(const ref<Expr> &e1, const ref<Expr> &e2) const {
+      return e1->compare(*e2) == 0;
+    }
+  };
 
 #ifdef KLEE_UNITTEST
 public:
@@ -178,6 +191,8 @@ public:
   bool forkDisabled;
 
   std::map<std::string, ExprSet> taintedExprs;
+
+  std::unordered_map<ref<Expr>, std::vector<uint64_t>, ExprKeyHash, ExprKeyEquality> size2addr;
 
   ref<LoopHandler> loopHandler;
 
@@ -276,6 +291,13 @@ public:
   bool isValidOffset(TimingSolver *solver,
                      const MemoryObject *mo,
                      uint64_t offset);
+
+  void linkSizeToID(ref<Expr> size, uint64_t address);
+
+  bool getAddressesBySize(ref<Expr> size,
+                          std::vector<uint64_t> &addresses);
+
+  void inferSizeConstraint(ref<Expr> condition);
 };
 
 struct ExecutionStateIDCompare {

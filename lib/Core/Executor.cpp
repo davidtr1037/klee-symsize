@@ -3649,6 +3649,8 @@ void Executor::executeAlloc(ExecutionState &state,
           os->write(i, reallocFrom->read8(i));
         state.addressSpace.unbindObject(reallocFrom->getObject());
       }
+
+      state.linkSizeToID(size, mo->address);
     }
   } else {
     // XXX For now we just pick a size. Ideally we would support

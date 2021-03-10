@@ -232,7 +232,10 @@ private:
   // mutable because we may need flush during read of const
   mutable UpdateList updates;
 
+  /* TODO: this is not a bound, rename */
   mutable unsigned actualBound;
+
+  mutable unsigned upperBound;
 
 public:
   unsigned size;
@@ -289,6 +292,20 @@ public:
   void setActualBound(unsigned bound) const {
     /* TODO: validate that there were no symbolic-offset writes */
     actualBound = bound;
+  }
+
+  unsigned getUpperBound() const {
+    return upperBound;
+  }
+
+  void setUpperBound(unsigned bound) {
+    if (bound < upperBound) {
+      upperBound = bound;
+    }
+  }
+
+  void resetUpperBound(unsigned bound) const {
+    upperBound = bound;
   }
 
 private:
