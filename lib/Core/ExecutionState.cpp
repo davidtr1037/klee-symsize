@@ -1079,40 +1079,40 @@ void ExecutionState::inferSizeConstraint(ref<Expr> condition) {
     return;
   }
 
-  ref<EqExpr> ee = dyn_cast<EqExpr>(condition);
-  if (ee.isNull()) {
+  ref<EqExpr> eqExpr = dyn_cast<EqExpr>(condition);
+  if (eqExpr.isNull()) {
     return;
   }
 
-  ref<ConstantExpr> l = dyn_cast<ConstantExpr>(ee->left);
-  if (l.isNull() || l->getZExtValue() != 0) {
+  if (isa<ConstantExpr>(eqExpr->left)) {
+    ref<ConstantExpr> ce = dyn_cast<ConstantExpr>(eqExpr->left);
+    if (ce->getZExtValue() != 0) {
+      return;
+    }
+  }
+
+  ref<CmpExpr> cmpExpr = dyn_cast<CmpExpr>(eqExpr->right);
+  if (cmpExpr.isNull()) {
     return;
   }
 
-  ref<CmpExpr> ce = dyn_cast<CmpExpr>(ee->right);
-  if (ce.isNull()) {
-    return;
-  }
-
-  condition->dump();
-  ref<Expr> size = nullptr;
-  if (isa<UltExpr>(ce) || isa<UleExpr>(ce)) {
-    ref<ConstantExpr> l = dyn_cast<ConstantExpr>(ce->left);
-    if (l.isNull()) {
+  if (isa<UltExpr>(cmpExpr) || isa<UleExpr>(cmpExpr)) {
+    ref<ConstantExpr> boundExpr = dyn_cast<ConstantExpr>(cmpExpr->left);
+    if (boundExpr.isNull()) {
       return;
     }
 
-    ref<Expr> size = ce->right;
-    uint64_t bound = l->getZExtValue();
+    ref<Expr> size = cmpExpr->right;
+    uint64_t bound = boundExpr->getZExtValue();
 
     std::vector<uint64_t> addresses;
     if (getAddressesBySize(size, addresses)) {
       for (uint64_t address : addresses) {
         ObjectPair op;
-        ref<ConstantExpr> ae = ConstantExpr::create(address, Expr::Int64);
-        if (addressSpace.resolveOne(*this, loopHandler->solver, ae, op)) {
+        ref<ConstantExpr> addressExpr = ConstantExpr::create(address, Expr::Int64);
+        if (addressSpace.resolveOne(*this, loopHandler->solver, addressExpr, op)) {
           ObjectState *wos = addressSpace.getWriteable(op.first, op.second);
-          switch (ce->getKind()) {
+          switch (cmpExpr->getKind()) {
           case Expr::Ult:
             /* size <= c */
             wos->setUpperBound(bound);
