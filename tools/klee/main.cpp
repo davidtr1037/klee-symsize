@@ -97,7 +97,7 @@ namespace {
 
   cl::opt<bool>
   NeverWriteKQueries("never-write-kqueries",
-                     cl::init(true),
+                     cl::init(false),
                      cl::desc(""),
                      cl::cat(TestCaseCat));
 
