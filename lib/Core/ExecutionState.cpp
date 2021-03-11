@@ -1098,6 +1098,9 @@ void ExecutionState::inferSizeConstraint(ref<Expr> condition) {
     }
 
     ref<Expr> e = mo->getSizeExpr();
+    if (isa<ZExtExpr>(e)) {
+      e = dyn_cast<ZExtExpr>(e)->src;
+    }
     if (isa<AddExpr>(e)) {
       ref<AddExpr> addExpr = dyn_cast<AddExpr>(e);
       if (isa<ConstantExpr>(addExpr->left)) {
