@@ -152,6 +152,7 @@ void ObjectState::onConcreteAccess(unsigned offset, bool track) const {
     return;
   }
 
+  /* TODO: update only if the option is enabled? */
   unsigned bound = offset + 1;
   if (bound > actualBound) {
     actualBound = bound;
@@ -164,6 +165,7 @@ void ObjectState::onSymbolicAccess(ref<Expr> offset, bool track) const {
     return;
   }
 
+  /* TODO: update only if the option is enabled? */
   /* conservatively set to the max value (capacity) */
   actualBound = size;
 }

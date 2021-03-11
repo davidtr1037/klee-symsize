@@ -1081,6 +1081,7 @@ bool ExecutionState::getAddressesBySize(ref<Expr> size,
 }
 
 void ExecutionState::inferSizeConstraint(ref<Expr> condition) {
+  /* TODO: check each constraint that is added to the PC? */
   if (loopHandler.isNull()) {
     return;
   }
