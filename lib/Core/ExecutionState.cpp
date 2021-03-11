@@ -796,8 +796,9 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
       }
     }
 
-    /* TODO: is correct? */
-    wos->setActualBound(0);
+    if (OptimizeArrayValuesByTracking) {
+      wos->setActualBound(0);
+    }
     if (OptimizeArrayValuesUsingUpperBound) {
       wos->resetUpperBound(maxUpperBound);
     }
