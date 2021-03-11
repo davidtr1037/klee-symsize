@@ -298,6 +298,10 @@ public:
                           std::vector<uint64_t> &addresses);
 
   void inferSizeConstraint(ref<Expr> condition);
+
+  bool extractSizeConstraint(ref<Expr> condition,
+                             ref<Expr> &size,
+                             ref<ConstantExpr> &bound);
 };
 
 struct ExecutionStateIDCompare {

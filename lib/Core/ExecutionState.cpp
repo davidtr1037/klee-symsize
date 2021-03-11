@@ -14,6 +14,7 @@
 
 #include "klee/Expr/Expr.h"
 #include "klee/Expr/ExprVisitor.h"
+#include "klee/Expr/ExprUtil.h"
 #include "klee/Module/Cell.h"
 #include "klee/Module/InstructionInfoTable.h"
 #include "klee/Module/KInstruction.h"
@@ -439,7 +440,9 @@ void ExecutionState::addConstraint(ref<Expr> e) {
     m.addConstraint(e);
   }
 
-  inferSizeConstraint(e);
+  if (OptimizeArrayValuesUsingUpperBound) {
+    inferSizeConstraint(e);
+  }
 }
 
 void ExecutionState::addTaintedExpr(std::string name, ref<Expr> offset) {
@@ -795,7 +798,9 @@ void ExecutionState::mergeHeap(ExecutionState *merged,
 
     /* TODO: is correct? */
     wos->setActualBound(0);
-    wos->resetUpperBound(maxUpperBound);
+    if (OptimizeArrayValuesUsingUpperBound) {
+      wos->resetUpperBound(maxUpperBound);
+    }
   }
 }
 
@@ -1079,53 +1084,136 @@ void ExecutionState::inferSizeConstraint(ref<Expr> condition) {
     return;
   }
 
-  ref<EqExpr> eqExpr = dyn_cast<EqExpr>(condition);
-  if (eqExpr.isNull()) {
+  ref<Expr> size;
+  ref<ConstantExpr> bound;
+  if (!extractSizeConstraint(condition, size, bound)) {
     return;
   }
 
-  if (isa<ConstantExpr>(eqExpr->left)) {
-    ref<ConstantExpr> ce = dyn_cast<ConstantExpr>(eqExpr->left);
-    if (ce->getZExtValue() != 0) {
-      return;
-    }
-  }
-
-  ref<CmpExpr> cmpExpr = dyn_cast<CmpExpr>(eqExpr->right);
-  if (cmpExpr.isNull()) {
-    return;
-  }
-
-  if (isa<UltExpr>(cmpExpr) || isa<UleExpr>(cmpExpr)) {
-    ref<ConstantExpr> boundExpr = dyn_cast<ConstantExpr>(cmpExpr->left);
-    if (boundExpr.isNull()) {
-      return;
+  for (auto &op : addressSpace.objects) {
+    const MemoryObject *mo = op.first;
+    if (mo->hasFixedSize()) {
+      continue;
     }
 
-    ref<Expr> size = cmpExpr->right;
-    uint64_t bound = boundExpr->getZExtValue();
+    ref<Expr> e = mo->getSizeExpr();
+    if (isa<AddExpr>(e)) {
+      ref<AddExpr> addExpr = dyn_cast<AddExpr>(e);
+      if (isa<ConstantExpr>(addExpr->left)) {
+        e = addExpr->right;
+      }
+    }
 
-    std::vector<uint64_t> addresses;
-    if (getAddressesBySize(size, addresses)) {
-      for (uint64_t address : addresses) {
-        ObjectPair op;
-        ref<ConstantExpr> addressExpr = ConstantExpr::create(address, Expr::Int64);
-        if (addressSpace.resolveOne(*this, loopHandler->solver, addressExpr, op)) {
-          ObjectState *wos = addressSpace.getWriteable(op.first, op.second);
-          switch (cmpExpr->getKind()) {
-          case Expr::Ult:
-            /* size <= c */
-            wos->setUpperBound(bound);
-            break;
-          case Expr::Ule:
-            /* size < c */
-            wos->setUpperBound(bound + 1);
-            break;
-          default:
-            break;
-          }
-        }
+    if (e->compare(*size) == 0) {
+      ExprReplaceVisitor visitor(e, bound);
+      ref<ConstantExpr> substSize = dyn_cast<ConstantExpr>(visitor.visit(mo->getSizeExpr()));
+      if (!substSize.isNull()) {
+        ObjectState *wos = addressSpace.getWriteable(mo, op.second.get());
+        wos->setUpperBound(substSize->getZExtValue());
+        break;
       }
     }
   }
+
+  //ref<EqExpr> eqExpr = dyn_cast<EqExpr>(condition);
+  //if (eqExpr.isNull()) {
+  //  return;
+  //}
+
+  //if (isa<ConstantExpr>(eqExpr->left)) {
+  //  ref<ConstantExpr> ce = dyn_cast<ConstantExpr>(eqExpr->left);
+  //  if (ce->getZExtValue() != 0) {
+  //    return;
+  //  }
+  //}
+
+  //ref<CmpExpr> cmpExpr = dyn_cast<CmpExpr>(eqExpr->right);
+  //if (cmpExpr.isNull()) {
+  //  return;
+  //}
+
+  //if (isa<UltExpr>(cmpExpr) || isa<UleExpr>(cmpExpr)) {
+  //  ref<ConstantExpr> boundExpr = dyn_cast<ConstantExpr>(cmpExpr->left);
+  //  if (boundExpr.isNull()) {
+  //    return;
+  //  }
+
+  //  ref<Expr> size = cmpExpr->right;
+  //  uint64_t bound = boundExpr->getZExtValue();
+
+  //  std::vector<uint64_t> addresses;
+  //  if (getAddressesBySize(size, addresses)) {
+  //    for (uint64_t address : addresses) {
+  //      ObjectPair op;
+  //      ref<ConstantExpr> addressExpr = ConstantExpr::create(address, Expr::Int64);
+  //      if (addressSpace.resolveOne(*this, loopHandler->solver, addressExpr, op)) {
+  //        ObjectState *wos = addressSpace.getWriteable(op.first, op.second);
+  //        switch (cmpExpr->getKind()) {
+  //        case Expr::Ult:
+  //          /* size <= c */
+  //          wos->setUpperBound(bound);
+  //          break;
+  //        case Expr::Ule:
+  //          /* size < c */
+  //          wos->setUpperBound(bound + 1);
+  //          break;
+  //        default:
+  //          break;
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
+}
+
+bool ExecutionState::extractSizeConstraint(ref<Expr> condition,
+                                           ref<Expr> &size,
+                                           ref<ConstantExpr> &bound) {
+  ref<EqExpr> eqExpr = dyn_cast<EqExpr>(condition);
+  if (eqExpr.isNull()) {
+    return false;
+  }
+
+  ref<ConstantExpr> ce = dyn_cast<ConstantExpr>(eqExpr->left);
+  if (ce.isNull()) {
+    return false;
+  }
+
+  if (ce->getWidth() == Expr::Bool) {
+    if (ce->getZExtValue() != 0) {
+      return false;
+    }
+
+    ref<CmpExpr> cmpExpr = dyn_cast<CmpExpr>(eqExpr->right);
+    if (cmpExpr.isNull()) {
+      return false;
+    }
+
+    ref<ConstantExpr> boundExpr = dyn_cast<ConstantExpr>(cmpExpr->left);
+    if (boundExpr.isNull()) {
+      return false;
+    }
+
+    size = cmpExpr->right;
+
+    switch (cmpExpr->getKind()) {
+    case Expr::Ult:
+      /* size <= c */
+      bound = boundExpr;
+      return true;
+    case Expr::Ule:
+      /* size < c */
+      bound = AddExpr::create(boundExpr,
+                              ConstantExpr::create(1, boundExpr->getWidth()));
+      return true;
+    default:
+      break;
+    }
+  } else {
+    size = eqExpr->right;
+    bound = ce;
+    return true;
+  }
+
+  return false;
 }
