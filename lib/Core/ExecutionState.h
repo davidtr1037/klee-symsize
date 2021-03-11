@@ -292,8 +292,10 @@ public:
                      const MemoryObject *mo,
                      uint64_t offset);
 
+  /* TODO: remove? */
   void linkSizeToID(ref<Expr> size, uint64_t address);
 
+  /* TODO: remove? */
   bool getAddressesBySize(ref<Expr> size,
                           std::vector<uint64_t> &addresses);
 
