@@ -48,6 +48,29 @@ namespace klee {
     std::set<const Array *> results;
   };
 
+  class ExprReplaceVisitor : public ExprVisitor {
+  private:
+    ref<Expr> src, dst;
+
+  public:
+    ExprReplaceVisitor(const ref<Expr> &src, const ref<Expr> &dst)
+        : src(src), dst(dst) {}
+
+    Action visitExpr(const Expr &e) override {
+      if (e == *src) {
+        return Action::changeTo(dst);
+      }
+      return Action::doChildren();
+    }
+
+    Action visitExprPost(const Expr &e) override {
+      if (e == *src) {
+        return Action::changeTo(dst);
+      }
+      return Action::doChildren();
+    }
+  };
+
 }
 
 #endif /* KLEE_EXPRUTIL_H */

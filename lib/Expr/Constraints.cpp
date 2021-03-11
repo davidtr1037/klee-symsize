@@ -10,6 +10,7 @@
 #include "klee/Expr/Constraints.h"
 
 #include "klee/Expr/ExprVisitor.h"
+#include "klee/Expr/ExprUtil.h"
 #include "klee/Module/KModule.h"
 #include "klee/Support/OptionCategories.h"
 
@@ -28,29 +29,6 @@ llvm::cl::opt<bool> RewriteEqualities(
     llvm::cl::init(true),
     llvm::cl::cat(SolvingCat));
 } // namespace
-
-class ExprReplaceVisitor : public ExprVisitor {
-private:
-  ref<Expr> src, dst;
-
-public:
-  ExprReplaceVisitor(const ref<Expr> &_src, const ref<Expr> &_dst)
-      : src(_src), dst(_dst) {}
-
-  Action visitExpr(const Expr &e) override {
-    if (e == *src) {
-      return Action::changeTo(dst);
-    }
-    return Action::doChildren();
-  }
-
-  Action visitExprPost(const Expr &e) override {
-    if (e == *src) {
-      return Action::changeTo(dst);
-    }
-    return Action::doChildren();
-  }
-};
 
 class ExprReplaceVisitor2 : public ExprVisitor {
 private:
