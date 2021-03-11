@@ -937,6 +937,7 @@ bool ExecutionState::areEquiv(TimingSolver *solver,
 
 bool ExecutionState::shouldOptimizeArrayValues() {
   return OptimizeArrayValuesByTracking ||
+         OptimizeArrayValuesUsingUpperBound ||
          OptimizeArrayValuesUsingSolver ||
          OptimizeArrayValuesUsingITERewrite;
 }
