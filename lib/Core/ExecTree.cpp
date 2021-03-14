@@ -98,10 +98,10 @@ void ExecTree::dumpGML(llvm::raw_ostream &os, std::set<uint32_t> &ids) {
     os << "}\n";
 }
 
-void ExecTree::dumpGMLToFile(std::set<uint32_t> &ids) {
+void ExecTree::dumpGMLToFile(std::set<uint32_t> &ids, std::string &name) {
   static int mergeID = 0;
   char path[1000] = {0,};
-  sprintf(path, "/tmp/exectree_%u", mergeID++);
+  sprintf(path, "/tmp/exectree_%s_%u.dot", name.data(), mergeID++);
   std::error_code ec;
   raw_fd_ostream *f = new raw_fd_ostream(path, ec, sys::fs::F_None);
   if (f) {

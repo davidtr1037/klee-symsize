@@ -44,7 +44,7 @@ public:
 
   void dumpGML(llvm::raw_ostream &os, std::set<uint32_t> &ids);
 
-  void dumpGMLToFile(std::set<uint32_t> &ids);
+  void dumpGMLToFile(std::set<uint32_t> &ids, std::string &name);
 
   ExecTreeNode *root;
   std::vector<ExecTreeNode *> nodes;
