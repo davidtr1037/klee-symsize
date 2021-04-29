@@ -60,17 +60,28 @@ static int __streq(const char *a, const char *b) {
   return 0;
 }
 
-static char *__get_sym_str(int numChars, char *name) {
-  int i;
-  char *s = malloc(numChars+1);
-  klee_mark_global(s);
-  klee_make_symbolic(s, numChars+1, name);
+static char *__get_sym_str(int numChars, char *name, int model_symbolic_size) {
+  if (model_symbolic_size) {
+    size_t n;
+    klee_make_symbolic(&n, sizeof(n), "n");
+    klee_assume(n <= (size_t)(numChars));
+    char *s = malloc(n + 1);
+    klee_mark_global(s);
+    klee_make_symbolic(s, n + 1, name);
+    s[n] = '\0';
+    return s;
+  } else {
+    int i;
+    char *s = malloc(numChars+1);
+    klee_mark_global(s);
+    klee_make_symbolic(s, numChars+1, name);
 
-  for (i=0; i<numChars; i++)
-    klee_posix_prefer_cex(s, __isprint(s[i]));
-  
-  s[numChars] = '\0';
-  return s;
+    for (i=0; i<numChars; i++)
+      klee_posix_prefer_cex(s, __isprint(s[i]));
+
+    s[numChars] = '\0';
+    return s;
+  }
 }
 
 static void __add_arg(int *argc, char **argv, char *arg, int argcMax) {
@@ -94,6 +105,7 @@ void klee_init_env(int *argcPtr, char ***argvPtr) {
   int sym_stdout_flag = 0;
   int save_all_writes_flag = 0;
   int fd_fail = 0;
+  int model_symbolic_size = 0;
   char **final_argv;
   char sym_arg_name[6] = "arg";
   unsigned sym_arg_num = 0;
@@ -134,7 +146,7 @@ usage: (klee_init_env) [options] [program arguments]\n\
       sym_arg_name[3] = '0' + sym_arg_num / 10;
       sym_arg_name[4] = '0' + sym_arg_num % 10;
       sym_arg_num++;
-      __add_arg(&new_argc, new_argv, __get_sym_str(max_len, sym_arg_name),
+      __add_arg(&new_argc, new_argv, __get_sym_str(max_len, sym_arg_name, model_symbolic_size),
                 1024);
     } else if (__streq(argv[k], "--sym-args") ||
                __streq(argv[k], "-sym-args")) {
@@ -162,7 +174,7 @@ usage: (klee_init_env) [options] [program arguments]\n\
         sym_arg_name[4] = '0' + sym_arg_num % 10;
         sym_arg_num++;
 
-        __add_arg(&new_argc, new_argv, __get_sym_str(max_len, sym_arg_name),
+        __add_arg(&new_argc, new_argv, __get_sym_str(max_len, sym_arg_name, model_symbolic_size),
                   1024);
       }
     } else if (__streq(argv[k], "--sym-files") ||
@@ -207,6 +219,9 @@ usage: (klee_init_env) [options] [program arguments]\n\
       k++;
     } else if (__streq(argv[k], "--fd-fail") || __streq(argv[k], "-fd-fail")) {
       fd_fail = 1;
+      k++;
+    } else if (__streq(argv[k], "--model-symbolic-size") || __streq(argv[k], "-model-symbolic-size")) {
+      model_symbolic_size = 1;
       k++;
     } else if (__streq(argv[k], "--bout-file") || __streq(argv[k], "-bout-file")) {
       k += 2;
