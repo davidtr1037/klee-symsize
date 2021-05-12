@@ -469,6 +469,11 @@ private:
                                ref<Expr> size,
                                uint64_t capacity);
 
+  void getFeasibleValues(ExecutionState &state,
+                         ref<Expr> size,
+                         uint64_t capacity,
+                         std::vector<uint64_t> &values);
+
   void dumpForkStats(ExecutionState &state, ref<Expr> condition);
 
   void setTaint(ExecutionState &state, ref<Expr> size);

@@ -3602,21 +3602,45 @@ void Executor::executeAlloc(ExecutionState &state,
       symbolicSizeAllocations++;
       capacity = getCapacity(state, size);
 
-      uint64_t max;
       switch (SymSizeMode) {
-      case SymSizeModes::Max:
+      case SymSizeModes::Max: {
         /* TODO: is it enough to add this constraint? */
-        max = getMaxConcreteValue(state, size, capacity);
+        uint64_t max = getMaxConcreteValue(state, size, capacity);
         state.addConstraint(
           EqExpr::create(size, ConstantExpr::create(max, size->getWidth())));
         size = ConstantExpr::create(max, size->getWidth());
         capacity = max;
         klee_message("allocating max value (size = %lu, at %s:%u)", capacity, info.file.data(), info.line);
         break;
+      }
 
-      case SymSizeModes::RangeEager:
-        assert(0);
-        break;
+      case SymSizeModes::RangeEager: {
+        std::vector<uint64_t> values;
+        getFeasibleValues(state, size, capacity, values);
+
+        std::vector<ExecutionState *> all;
+        all.push_back(&state);
+        for (unsigned i = 1; i < values.size(); i++) {
+          ExecutionState *es = all[i - 1];
+          ExecutionState *ns = es->branch();
+          addedStates.push_back(ns);
+          all.push_back(ns);
+          processTree->attach(es->ptreeNode, ns, es);
+        }
+
+        assert(values.size() == all.size());
+        for (unsigned i = 0; i < values.size(); i++) {
+          ExecutionState *es = all[i];
+          es->pc = es->prevPC;
+          es->addConstraint(
+            EqExpr::create(
+              size, ConstantExpr::create(values[i], size->getWidth())
+            )
+          );
+        }
+        klee_message("allocating symbolic size (forked states = %lu, at %s:%u)", all.size(), info.file.data(), info.line);
+        return;
+      }
 
       case SymSizeModes::RangeLazy:
         setTaint(state, size);
@@ -4500,6 +4524,23 @@ uint64_t Executor::getMaxConcreteValue(ExecutionState &state,
 
   assert(0);
   return 0;
+}
+
+void Executor::getFeasibleValues(ExecutionState &state,
+                                 ref<Expr> size,
+                                 uint64_t capacity,
+                                 std::vector<uint64_t> &values) {
+  for (uint64_t i = 0; i < capacity + 1; i++) {
+    Solver::Validity result = Solver::False;
+    solver->setTimeout(coreSolverTimeout);
+    uint64_t candidate = capacity - i;
+    ref<Expr> eq = EqExpr::create(size, ConstantExpr::create(candidate, size->getWidth()));
+    assert(solver->evaluate(state.constraints, eq, result, state.queryMetaData));
+    solver->setTimeout(time::Span());
+    if (result != Solver::False) {
+      values.push_back(candidate);
+    }
+  }
 }
 
 void Executor::dumpForkStats(ExecutionState &state, ref<Expr> condition) {
