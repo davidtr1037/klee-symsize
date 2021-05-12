@@ -426,6 +426,21 @@ cl::opt<bool> PartitionLargeObjects("partition-large-objects", cl::init(false), 
 cl::opt<unsigned> MaxPartitionSize("max-partition-size", cl::init(100), cl::desc(""));
 cl::opt<unsigned> TerminateStatesOnMemoryLimit("terminate-states-on-memory-limit", cl::init(true), cl::desc(""));
 
+enum SymSizeModes {
+  Max,
+  RangeEager,
+  RangeLazy,
+};
+
+cl::opt<SymSizeModes> SymSizeMode(
+  "sym-size-mode",
+  cl::desc("Specify the external call policy"),
+  llvm::cl::values(
+      clEnumValN(Max, "max", ""),
+      clEnumValN(RangeEager, "eager", ""),
+      clEnumValN(RangeLazy, "lazy", "") KLEE_LLVM_CL_VAL_END),
+    cl::init(SymSizeModes::RangeLazy));
+
 } // namespace
 
 // XXX hack
@@ -3583,11 +3598,35 @@ void Executor::executeAlloc(ExecutionState &state,
       ref<ConstantExpr> c = dyn_cast<ConstantExpr>(size);
       capacity = c->getZExtValue();
     } else {
+      const InstructionInfo &info = kmodule->infos->getInfo(*state.prevPC->inst);
       symbolicSizeAllocations++;
       capacity = getCapacity(state, size);
-      const InstructionInfo &info = kmodule->infos->getInfo(*state.prevPC->inst);
-      klee_message("allocating symbolic size (capacity = %lu, at %s:%u)", capacity, info.file.data(), info.line);
-      setTaint(state, size);
+
+      uint64_t max;
+      switch (SymSizeMode) {
+      case SymSizeModes::Max:
+        /* TODO: is it enough to add this constraint? */
+        max = getMaxConcreteValue(state, size, capacity);
+        state.addConstraint(
+          EqExpr::create(size, ConstantExpr::create(max, size->getWidth())));
+        size = ConstantExpr::create(max, size->getWidth());
+        capacity = max;
+        klee_message("allocating max value (size = %lu, at %s:%u)", capacity, info.file.data(), info.line);
+        break;
+
+      case SymSizeModes::RangeEager:
+        assert(0);
+        break;
+
+      case SymSizeModes::RangeLazy:
+        setTaint(state, size);
+        klee_message("allocating symbolic size (capacity = %lu, at %s:%u)", capacity, info.file.data(), info.line);
+        break;
+
+      default:
+        assert(0);
+        break;
+      }
     }
 
     std::vector<uint64_t> partition;
@@ -4442,6 +4481,25 @@ size_t Executor::getCapacity(ExecutionState &state, ref<Expr> size) {
   }
 
   return capacity;
+}
+
+uint64_t Executor::getMaxConcreteValue(ExecutionState &state,
+                                       ref<Expr> size,
+                                       uint64_t capacity) {
+  for (uint64_t i = 0; i < capacity + 1; i++) {
+    Solver::Validity result = Solver::False;
+    solver->setTimeout(coreSolverTimeout);
+    uint64_t candidate = capacity - i;
+    ref<Expr> eq = EqExpr::create(size, ConstantExpr::create(candidate, size->getWidth()));
+    assert(solver->evaluate(state.constraints, eq, result, state.queryMetaData));
+    solver->setTimeout(time::Span());
+    if (result != Solver::False) {
+      return candidate;
+    }
+  }
+
+  assert(0);
+  return 0;
 }
 
 void Executor::dumpForkStats(ExecutionState &state, ref<Expr> condition) {

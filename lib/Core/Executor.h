@@ -465,6 +465,10 @@ private:
 
   size_t getCapacity(ExecutionState &state, ref<Expr> size);
 
+  uint64_t getMaxConcreteValue(ExecutionState &state,
+                               ref<Expr> size,
+                               uint64_t capacity);
+
   void dumpForkStats(ExecutionState &state, ref<Expr> condition);
 
   void setTaint(ExecutionState &state, ref<Expr> size);
