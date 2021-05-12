@@ -4526,6 +4526,7 @@ uint64_t Executor::getMaxConcreteValue(ExecutionState &state,
   return 0;
 }
 
+/* TODO: the order affects to exploration */
 void Executor::getFeasibleValues(ExecutionState &state,
                                  ref<Expr> size,
                                  uint64_t capacity,
