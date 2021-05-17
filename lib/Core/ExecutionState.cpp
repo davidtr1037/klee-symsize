@@ -1223,3 +1223,69 @@ bool ExecutionState::extractSizeConstraint(ref<Expr> condition,
 
   return false;
 }
+
+ref<Expr> ExecutionState::simplifyBoundsCheck(ref<Expr> e) {
+  if (!isa<AndExpr>(e)) {
+    return e;
+  }
+
+  ref<AndExpr> andExpr = dyn_cast<AndExpr>(e);
+  ref<UleExpr> bytesCheck = dyn_cast<UleExpr>(andExpr->left);
+  ref<UleExpr> offsetCheck = dyn_cast<UleExpr>(andExpr->right);
+  if (bytesCheck.isNull() || offsetCheck.isNull()) {
+    return e;
+  }
+
+  ref<Expr> size = bytesCheck->right;
+
+  uint64_t max_lower = 0;
+  for (ref<Expr> c : constraints) {
+    if (isa<UleExpr>(c)) {
+      ref<UleExpr> ule = dyn_cast<UleExpr>(c);
+      if (isa<ConstantExpr>(ule->left) && ule->right == size) {
+        uint64_t lower = dyn_cast<ConstantExpr>(ule->left)->getZExtValue();
+        if (lower > max_lower) {
+          max_lower = lower;
+        }
+      }
+    }
+    if (isa<UltExpr>(c)) {
+      ref<UltExpr> ult = dyn_cast<UltExpr>(c);
+      if (isa<ConstantExpr>(ult->left) && ult->right == size) {
+        /* we have a less-than */
+        uint64_t lower = dyn_cast<ConstantExpr>(ult->left)->getZExtValue();
+        lower++;
+        if (lower > max_lower) {
+          max_lower = lower;
+        }
+      }
+    }
+  }
+
+  ref<Expr> simplifiedBytesCheck = bytesCheck;
+  ref<Expr> simplifiedOffsetCheck = offsetCheck;
+
+  if (isa<ConstantExpr>(bytesCheck->left)) {
+    /* we have: bytes <= size */
+    ref<ConstantExpr> bytesExpr = dyn_cast<ConstantExpr>(bytesCheck->left);
+    uint64_t bytesValue = bytesExpr->getZExtValue();
+    if (max_lower >= bytesValue) {
+      simplifiedBytesCheck = ConstantExpr::create(1, Expr::Bool);
+    }
+  }
+
+  /* TODO: check overflow */
+  if (isa<ConstantExpr>(offsetCheck->left)) {
+    uint64_t offset = dyn_cast<ConstantExpr>(offsetCheck->left)->getZExtValue();
+    /* TODO: make sure that addExpr->right is equal to size */
+    ref<AddExpr> addExpr = dyn_cast<AddExpr>(offsetCheck->right);
+    assert(!addExpr.isNull());
+    uint64_t x = dyn_cast<ConstantExpr>(addExpr->left)->getZExtValue();
+    /* we have: offset + bytes <= size */
+    if (max_lower >= offset - x) {
+      simplifiedOffsetCheck = ConstantExpr::create(1, Expr::Bool);
+    }
+  }
+
+  return AndExpr::create(simplifiedBytesCheck, simplifiedOffsetCheck);
+}

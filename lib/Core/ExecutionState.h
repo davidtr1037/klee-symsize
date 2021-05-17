@@ -304,6 +304,8 @@ public:
   bool extractSizeConstraint(ref<Expr> condition,
                              ref<Expr> &size,
                              ref<ConstantExpr> &bound);
+
+  ref<Expr> simplifyBoundsCheck(ref<Expr> e);
 };
 
 struct ExecutionStateIDCompare {
