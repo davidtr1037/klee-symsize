@@ -112,6 +112,7 @@ void MergeHandler::addClosedState(ExecutionState *es,
         executor->terminateState(*es);
         executor->mergingSearcher->inCloseMerge.erase(es);
         mergedSuccessful = true;
+        executor->interpreterHandler->decUnmergedExploredPaths();
         break;
       }
     }
