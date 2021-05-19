@@ -466,14 +466,17 @@ void klee_make_symbolic(void *addr, size_t nbytes, const char *name) {
       assert(nbytes == 4);
       *((int*) addr) = 0;
     } else {
-      if (boo->numBytes != nbytes) {
-        fprintf(stderr, "KLEE-REPLAY: ERROR: make_symbolic mismatch, different sizes: "
-           "%d in input file, %lu in code\n", boo->numBytes, (unsigned long)nbytes);
-        exit(1);
-      } else {
-        memcpy(addr, boo->bytes, nbytes);
-        obj_index++;
-      }
+      assert(boo->numBytes >= nbytes);
+      memcpy(addr, boo->bytes, nbytes);
+      obj_index++;
+      //if (boo->numBytes != nbytes) {
+      //  fprintf(stderr, "KLEE-REPLAY: ERROR: make_symbolic mismatch, different sizes: "
+      //     "%d in input file, %lu in code\n", boo->numBytes, (unsigned long)nbytes);
+      //  exit(1);
+      //} else {
+      //  memcpy(addr, boo->bytes, nbytes);
+      //  obj_index++;
+      //}
     }
   }
 }
