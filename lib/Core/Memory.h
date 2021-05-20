@@ -109,6 +109,8 @@ public:
       parent(parent),
       allocSite(allocSite),
       canFree(canFree) {
+    /* this assumption is needed for pointer resolution */
+    assert(capacity > 0);
   }
 
   ~MemoryObject();

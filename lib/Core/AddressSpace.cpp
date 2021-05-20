@@ -62,28 +62,42 @@ bool AddressSpace::checkResolvedObject(ExecutionState &state,
                                        const MemoryObject *mo) const {
   if (mo->hasFixedSize()) {
     unsigned fixedSize = mo->getFixedSize();
-    return ((fixedSize == 0 && address==mo->address) || (address - mo->address < fixedSize));
-  }
-
-  ref<Expr> eqZero = Expr::createIsZero(mo->size);
-  bool mustBeZero;
-  if (!solver->mustBeTrue(state.constraints, eqZero, mustBeZero, state.queryMetaData)) {
-    return false;
-  }
-
-  if (mustBeZero) {
-    return address == mo->address;
+    return ((fixedSize == 0 && address == mo->address) || \
+            (address - mo->address < fixedSize));
   } else {
-    ref<Expr> inRange = UltExpr::create(
-      ConstantExpr::create(address - mo->address, Context::get().getPointerWidth()),
-      mo->size
-    );
-    bool mayBeTrue;
-    if (!solver->mayBeTrue(state.constraints, inRange, mayBeTrue, state.queryMetaData)) {
-      return false;
-    }
-    return mayBeTrue;
+    /* the capacity is non-zero,
+     * so if the symbolic size must be zero,
+     * this memory object will be still resolved (as in the concrete case).
+     */
+    return address - mo->address < mo->capacity;
   }
+
+  //ref<Expr> eqZero = Expr::createIsZero(mo->size);
+  //bool mustBeZero;
+  //if (!solver->mustBeTrue(state.constraints,
+  //                        eqZero,
+  //                        mustBeZero,
+  //                        state.queryMetaData)) {
+  //  return false;
+  //}
+
+  //if (mustBeZero) {
+  //  return address == mo->address;
+  //} else {
+  //  ref<Expr> inRange = UltExpr::create(
+  //    ConstantExpr::create(address - mo->address,
+  //                         Context::get().getPointerWidth()),
+  //    mo->getSizeExpr()
+  //  );
+  //  bool mayBeTrue;
+  //  if (!solver->mayBeTrue(state.constraints,
+  //                         inRange,
+  //                         mayBeTrue,
+  //                         state.queryMetaData)) {
+  //    return false;
+  //  }
+  //  return mayBeTrue;
+  //}
 }
 
 bool AddressSpace::resolveOne(ExecutionState &state,
