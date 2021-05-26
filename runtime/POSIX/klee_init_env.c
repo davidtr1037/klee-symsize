@@ -247,7 +247,7 @@ usage: (klee_init_env) [options] [program arguments]\n\
   *argvPtr = final_argv;
 
   klee_init_fds(sym_files, sym_file_len, sym_stdin_len, sym_stdout_flag,
-                save_all_writes_flag, fd_fail);
+                save_all_writes_flag, fd_fail, 0);
 }
 
 /* The following function represents the main function of the user application

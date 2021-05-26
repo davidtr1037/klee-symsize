@@ -43,8 +43,8 @@ exe_sym_env_t __exe_env = {
   0
 };
 
-static void __create_new_dfile(exe_disk_file_t *dfile, unsigned size, 
-                               const char *name, struct stat64 *defaults) {
+static void __create_new_dfile(exe_disk_file_t *dfile, unsigned max_size,
+                               const char *name, struct stat64 *defaults, int model_symbolic_size) {
   struct stat64 *s = malloc(sizeof(*s));
   const char *sp;
   char sname[64];
@@ -52,9 +52,15 @@ static void __create_new_dfile(exe_disk_file_t *dfile, unsigned size,
     sname[sp-name] = *sp;
   memcpy(&sname[sp-name], "-stat", 6);
 
-  assert(size);
-
-  dfile->size = size;
+  assert(max_size);
+  if (model_symbolic_size) {
+    unsigned sym_size;
+    klee_make_symbolic(&sym_size, sizeof(sym_size), "filesize");
+    klee_assume(sym_size <= max_size);
+    dfile->size = sym_size;
+  } else {
+    dfile->size = max_size;
+  }
   dfile->contents = malloc(dfile->size);
   klee_make_symbolic(dfile->contents, dfile->size, name);
   
@@ -109,7 +115,7 @@ static unsigned __sym_uint32(const char *name) {
    max_failures: maximum number of system call failures */
 void klee_init_fds(unsigned n_files, unsigned file_length,
                    unsigned stdin_length, int sym_stdout_flag,
-                   int save_all_writes_flag, unsigned max_failures) {
+                   int save_all_writes_flag, unsigned max_failures, int model_symbolic_size) {
   unsigned k;
   char name[7] = "?-data";
   struct stat64 s;
@@ -120,13 +126,13 @@ void klee_init_fds(unsigned n_files, unsigned file_length,
   __exe_fs.sym_files = malloc(sizeof(*__exe_fs.sym_files) * n_files);
   for (k=0; k < n_files; k++) {
     name[0] = 'A' + k;
-    __create_new_dfile(&__exe_fs.sym_files[k], file_length, name, &s);
+    __create_new_dfile(&__exe_fs.sym_files[k], file_length, name, &s, model_symbolic_size);
   }
   
   /* setting symbolic stdin */
   if (stdin_length) {
     __exe_fs.sym_stdin = malloc(sizeof(*__exe_fs.sym_stdin));
-    __create_new_dfile(__exe_fs.sym_stdin, stdin_length, "stdin", &s);
+    __create_new_dfile(__exe_fs.sym_stdin, stdin_length, "stdin", &s, model_symbolic_size);
     __exe_env.fds[0].dfile = __exe_fs.sym_stdin;
   }
   else __exe_fs.sym_stdin = NULL;
@@ -149,7 +155,7 @@ void klee_init_fds(unsigned n_files, unsigned file_length,
   /* setting symbolic stdout */
   if (sym_stdout_flag) {
     __exe_fs.sym_stdout = malloc(sizeof(*__exe_fs.sym_stdout));
-    __create_new_dfile(__exe_fs.sym_stdout, 1024, "stdout", &s);
+    __create_new_dfile(__exe_fs.sym_stdout, 1024, "stdout", &s, 0);
     __exe_env.fds[1].dfile = __exe_fs.sym_stdout;
     __exe_fs.stdout_writes = 0;
   }
