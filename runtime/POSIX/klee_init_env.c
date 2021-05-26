@@ -106,6 +106,7 @@ void klee_init_env(int *argcPtr, char ***argvPtr) {
   int save_all_writes_flag = 0;
   int fd_fail = 0;
   int model_symbolic_size = 0;
+  int model_symbolic_fd_size = 0;
   char **final_argv;
   char sym_arg_name[6] = "arg";
   unsigned sym_arg_num = 0;
@@ -223,6 +224,9 @@ usage: (klee_init_env) [options] [program arguments]\n\
     } else if (__streq(argv[k], "--model-symbolic-size") || __streq(argv[k], "-model-symbolic-size")) {
       model_symbolic_size = 1;
       k++;
+    } else if (__streq(argv[k], "--model-symbolic-fd-size") || __streq(argv[k], "-model-symbolc-fd-size")) {
+      model_symbolic_fd_size = 1;
+      k++;
     } else if (__streq(argv[k], "--bout-file") || __streq(argv[k], "-bout-file")) {
       k += 2;
     } else if (__streq(argv[k], "--max-fail") ||
@@ -247,7 +251,7 @@ usage: (klee_init_env) [options] [program arguments]\n\
   *argvPtr = final_argv;
 
   klee_init_fds(sym_files, sym_file_len, sym_stdin_len, sym_stdout_flag,
-                save_all_writes_flag, fd_fail, 0);
+                save_all_writes_flag, fd_fail, model_symbolic_fd_size);
 }
 
 /* The following function represents the main function of the user application
