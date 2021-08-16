@@ -41,11 +41,11 @@ This extension supports several modes:
 In this mode, we attempt to merge loops that depend on symbolic-size expressions.
 Use the following options to enable this mode (with optimizations):
 ```
--use-loop-merge=1 -use-optimized-merge=1 -optimize-ite-using-exec-tree=1 -optimize-array-ite-using-exec-tree=1
+-use-loop-merge=1 -optimize-ite-using-exec-tree=1 -optimize-array-ite-using-exec-tree=1
 ```
 To enable without optimizations:
 ```
--use-loop-merge=1 -use-optimized-merge=1
+-use-loop-merge=1
 ```
 
 #### Lazy Forking
