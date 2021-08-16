@@ -37,6 +37,20 @@ To set the capacity (bound) for symbolic-size allocations:
 ### Modes
 This extension supports several modes:
 
+#### Eager Forking
+This mode forks at *allocation time* for each possible value of the symbolic-size.
+Use the following option to enable this mode:
+```
+-sym-size-mode=eager
+```
+
+#### Lazy Forking
+This mode forks on-demand.
+Use the following option to enable this mode:
+```
+-sym-size-mode=lazy
+```
+
 #### Merging
 In this mode, we attempt to merge loops that depend on symbolic-size expressions.
 Use the following options to enable this mode (with optimizations):
@@ -46,20 +60,6 @@ Use the following options to enable this mode (with optimizations):
 To enable without optimizations:
 ```
 -use-loop-merge=1
-```
-
-#### Lazy Forking
-This mode doesn't use merging and simply forks when needed.
-Use the following option to enable this mode:
-```
--sym-size-mode=lazy
-```
-
-#### Eager Forking
-This mode doesn't use merging and forks at *allocation time* for each possible value of the symbolic-size.
-Use the following option to enable this mode:
-```
--sym-size-mode=eager
 ```
 
 #### Concretization
