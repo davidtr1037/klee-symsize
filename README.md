@@ -69,6 +69,30 @@ Use the following option to enable this mode:
 -sym-size-mode=max
 ```
 
+### POSIX runtime
+
+#### Symbolic command-line arguments
+To enabling symbolic command-line arguments with symbolic size, use the following option:
+```
+--model-symbolic-size
+```
+For example:
+```
+klee -libc=uclibc -posix-runtime … -allocate-sym-size=1 -capacity=<capacity> -sym-size-mode=<mode> <bc_file> --model-symbolic-size --sym-args 0 1 10
+```
+Note that the size of the allocated command-line strings will be bounded by both the specified capacity and the argument of `--sym-args` (in this case: 10).
+
+#### Symbolic files
+To enabling symbolic files with symbolic size, use the following option:
+```
+--model-symbolic-fd-size
+```
+For example:
+```
+klee -libc=uclibc -posix-runtime … -allocate-sym-size=1 -capacity=<capacity> -sym-size-mode=<mode> <bc_file> --model-symbolic-fd-size --sym-files 1 20
+```
+Note that the size of the allocated buffer of the symbolic file will be bounded by both the specified capacity and the argument of `--sym-files` (in this case: 20).
+
 ### Debugging
 To collect statistics about symbolic-size dependent loops,
 use the following option:
